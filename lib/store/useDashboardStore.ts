@@ -1,17 +1,19 @@
 /**
  * Dashboard Store with localStorage Persistence
+ * Industrial-grade state management with type safety
  */
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   Widget,
-  DashboardStore,
-  DashboardState,
   WidgetInput,
   WidgetUpdate,
+  WidgetData,
+  WidgetStatus,
 } from "@/lib/types/widget";
-import { Layout, LayoutItem } from "react-grid-layout";
+import type { DashboardStore, DashboardState } from "@/lib/types/dashboard";
+import type { Layout, LayoutItem } from "react-grid-layout";
 
 /**
  * Initial state for the dashboard
@@ -23,9 +25,29 @@ const initialState: DashboardState = {
 
 /**
  * Generate a unique ID for widgets
+ * Uses timestamp and random string for collision resistance
  */
 const generateWidgetId = (title: string): string => {
-  return `widget-${title}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 9);
+  const sanitizedTitle = title
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .substring(0, 20);
+  return `widget-${sanitizedTitle}-${timestamp}-${random}`;
+};
+
+/**
+ * Validates widget data structure
+ */
+const validateWidgetData = (data: unknown): data is WidgetData => {
+  if (!data || typeof data !== "object") return false;
+  const widgetData = data as WidgetData;
+  return (
+    Array.isArray(widgetData.records) &&
+    typeof widgetData.totalCount === "number" &&
+    typeof widgetData.fetchedAt === "number"
+  );
 };
 
 /**
@@ -61,8 +83,10 @@ export const useDashboardStore = create<DashboardStore>()(
       ...initialState,
 
       // Actions
-      addWidget: (widget: WidgetInput) => {
-        const id: string = generateWidgetId(widget.title);
+      addWidget: (widget: WidgetInput): void => {
+        const id = generateWidgetId(widget.title);
+        const now = Date.now();
+
         const newWidget: Widget = {
           ...widget,
           id,
@@ -70,7 +94,8 @@ export const useDashboardStore = create<DashboardStore>()(
             ...widget.layout,
             i: id, // Auto-generate 'i' from id
           },
-          lastUpdated: Date.now(),
+          createdAt: now,
+          lastUpdated: now,
         };
 
         set((state) => ({
@@ -78,7 +103,7 @@ export const useDashboardStore = create<DashboardStore>()(
         }));
       },
 
-      removeWidget: (id: string) => {
+      removeWidget: (id: string): void => {
         set((state) => ({
           widgets: state.widgets.filter((widget) => widget.id !== id),
           selectedWidgetId:
@@ -86,7 +111,7 @@ export const useDashboardStore = create<DashboardStore>()(
         }));
       },
 
-      updateWidget: (id: string, updates: WidgetUpdate) => {
+      updateWidget: (id: string, updates: WidgetUpdate): void => {
         set((state) => ({
           widgets: state.widgets.map((widget) =>
             widget.id === id
@@ -104,7 +129,7 @@ export const useDashboardStore = create<DashboardStore>()(
         }));
       },
 
-      updateWidgetLayout: (id: string, layout: LayoutItem) => {
+      updateWidgetLayout: (id: string, layout: LayoutItem): void => {
         set((state) => ({
           widgets: state.widgets.map((widget) =>
             widget.id === id
@@ -118,7 +143,8 @@ export const useDashboardStore = create<DashboardStore>()(
         }));
       },
 
-      updateAllWidgetLayouts: (layouts: Layout) => {
+      updateAllWidgetLayouts: (layouts: Layout): void => {
+        const now = Date.now();
         set((state) => ({
           widgets: state.widgets.map((widget) => {
             const layout = layouts.find((l) => l.i === widget.id);
@@ -128,19 +154,25 @@ export const useDashboardStore = create<DashboardStore>()(
             return {
               ...widget,
               layout,
-              lastUpdated: Date.now(),
+              lastUpdated: now,
             };
           }),
         }));
       },
 
-      setWidgetData: (id: string, data: any) => {
+      setWidgetData: (id: string, data: WidgetData): void => {
+        if (!validateWidgetData(data)) {
+          console.error("Invalid widget data structure", data);
+          return;
+        }
+
         set((state) => ({
           widgets: state.widgets.map((widget) =>
             widget.id === id
               ? {
                   ...widget,
                   data,
+                  status: "success" as WidgetStatus,
                   lastUpdated: Date.now(),
                 }
               : widget
@@ -150,16 +182,16 @@ export const useDashboardStore = create<DashboardStore>()(
 
       updateWidgetStatus: (
         id: string,
-        status: Widget["status"],
+        status: WidgetStatus,
         error?: string
-      ) => {
+      ): void => {
         set((state) => ({
           widgets: state.widgets.map((widget) =>
             widget.id === id
               ? {
                   ...widget,
                   status,
-                  error,
+                  error: status === "error" ? error : undefined,
                   lastUpdated: Date.now(),
                 }
               : widget
@@ -167,15 +199,84 @@ export const useDashboardStore = create<DashboardStore>()(
         }));
       },
 
-      selectWidget: (id: string | null) => {
+      selectWidget: (id: string | null): void => {
         set({ selectedWidgetId: id });
       },
 
-      clearAllWidgets: () => {
+      clearAllWidgets: (): void => {
         set({
           widgets: [],
           selectedWidgetId: null,
         });
+      },
+
+      duplicateWidget: (id: string): void => {
+        const widget = get().widgets.find((w) => w.id === id);
+        if (!widget) return;
+
+        const newId = generateWidgetId(`${widget.title} (Copy)`);
+        const now = Date.now();
+
+        const duplicated: Widget = {
+          ...widget,
+          id: newId,
+          title: `${widget.title} (Copy)`,
+          layout: {
+            ...widget.layout,
+            i: newId,
+            x: (widget.layout.x + 2) % 12, // Offset position
+            y: widget.layout.y + 2,
+          },
+          createdAt: now,
+          lastUpdated: now,
+        };
+
+        set((state) => ({
+          widgets: [...state.widgets, duplicated],
+        }));
+      },
+
+      exportWidget: (id: string): string => {
+        const widget = get().widgets.find((w) => w.id === id);
+        if (!widget) {
+          throw new Error(`Widget with id ${id} not found`);
+        }
+
+        const exportData = {
+          ...widget,
+          exportedAt: Date.now(),
+          version: "1.0.0",
+        };
+
+        return JSON.stringify(exportData, null, 2);
+      },
+
+      importWidget: (json: string): void => {
+        try {
+          const parsed = JSON.parse(json) as Widget;
+
+          // Create new widget from imported data
+          const newId = generateWidgetId(parsed.title);
+          const now = Date.now();
+
+          const importedWidget: Widget = {
+            ...parsed,
+            id: newId,
+            layout: {
+              ...parsed.layout,
+              i: newId,
+            },
+            createdAt: now,
+            lastUpdated: now,
+          };
+
+          set((state) => ({
+            widgets: [...state.widgets, importedWidget],
+          }));
+        } catch (error) {
+          console.error("Failed to import widget:", error);
+          throw new Error("Invalid widget JSON format");
+        }
       },
     }),
     {
@@ -210,17 +311,49 @@ export const useDashboardStore = create<DashboardStore>()(
  * Use these to prevent unnecessary re-renders
  */
 export const dashboardSelectors = {
-  widgets: (state: DashboardStore) => state.widgets,
-  selectedWidget: (state: DashboardStore) =>
+  /** Get all widgets */
+  widgets: (state: DashboardStore): Widget[] => state.widgets,
+
+  /** Get currently selected widget */
+  selectedWidget: (state: DashboardStore): Widget | undefined =>
     state.widgets.find((w) => w.id === state.selectedWidgetId),
-  widgetById: (id: string) => (state: DashboardStore) =>
-    state.widgets.find((w) => w.id === id),
-  widgetsByType: (type: Widget["type"]) => (state: DashboardStore) =>
-    state.widgets.filter((w) => w.type === type),
-  loadingWidgets: (state: DashboardStore) =>
+
+  /** Get widget by ID */
+  widgetById:
+    (id: string) =>
+    (state: DashboardStore): Widget | undefined =>
+      state.widgets.find((w) => w.id === id),
+
+  /** Get widgets by type */
+  widgetsByType:
+    (type: Widget["type"]) =>
+    (state: DashboardStore): Widget[] =>
+      state.widgets.filter((w) => w.type === type),
+
+  /** Get all loading widgets */
+  loadingWidgets: (state: DashboardStore): Widget[] =>
     state.widgets.filter((w) => w.status === "loading"),
-  errorWidgets: (state: DashboardStore) =>
+
+  /** Get all error widgets */
+  errorWidgets: (state: DashboardStore): Widget[] =>
     state.widgets.filter((w) => w.status === "error"),
+
+  /** Get all successful widgets */
+  successWidgets: (state: DashboardStore): Widget[] =>
+    state.widgets.filter((w) => w.status === "success"),
+
+  /** Get widget count */
+  widgetCount: (state: DashboardStore): number => state.widgets.length,
+
+  /** Get widgets sorted by creation date */
+  widgetsByCreationDate: (state: DashboardStore): Widget[] =>
+    [...state.widgets].sort((a, b) => b.createdAt - a.createdAt),
+
+  /** Get widgets sorted by last update */
+  widgetsByLastUpdate: (state: DashboardStore): Widget[] =>
+    [...state.widgets].sort(
+      (a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0)
+    ),
 };
 
 /**

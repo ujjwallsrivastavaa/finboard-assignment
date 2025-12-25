@@ -3,9 +3,13 @@
 import { useEffect, useState, useRef } from "react";
 import { Responsive, Layout } from "react-grid-layout";
 import { useDashboardStore } from "@/lib/store/useDashboardStore";
-import { widgetsToLayouts } from "@/components/gridLayoutHelpers";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { widgetsToLayouts } from "@/lib/utils/gridLayoutHelpers";
+import { GRID_CONFIG } from "@/lib/constants/widgetDefaults";
+import AddWidgetDialog from "@/components/AddWidgetDialog";
+import CardWidget from "@/components/widgets/Card";
+import TableWidget from "@/components/widgets/Table";
+import { ApiService } from "@/lib/services";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
@@ -38,29 +42,53 @@ export default function DashboardPage() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-  const { widgets, addWidget, removeWidget, updateAllWidgetLayouts } =
-    useDashboardStore();
+  const {
+    widgets,
+    removeWidget,
+    updateAllWidgetLayouts,
+    setWidgetData,
+    updateWidgetStatus,
+  } = useDashboardStore();
 
-  const handleAddWidget = () => {
-    addWidget({
-      type: "table",
-      title: `Widget ${widgets.length + 1}`,
-      layout: {
-        x: (widgets.length * 2) % 12,
-        y: Infinity,
-        w: 4,
-        h: 4,
-        minW: 4,
-        minH: 4,
-      },
-      config: {
-        apiEndpoint: "/api/mock-data",
-        fields: ["name", "value", "status"],
-        refreshInterval: 30000,
-      },
-      status: "idle",
+  // Track which widgets are already polling to avoid duplicates
+  const pollingWidgetsRef = useRef<Set<string>>(new Set());
+
+  // Start polling for all widgets on mount and when new widgets are added
+  useEffect(() => {
+    if (!mounted) return;
+
+    widgets.forEach((widget) => {
+      // Skip if already polling
+      if (pollingWidgetsRef.current.has(widget.id)) {
+        return;
+      }
+
+      if (widget.config.refreshInterval && widget.config.refreshInterval > 0) {
+        pollingWidgetsRef.current.add(widget.id);
+
+        ApiService.startPolling(
+          widget.id,
+          widget.config,
+          (data) => {
+            setWidgetData(widget.id, data);
+            updateWidgetStatus(widget.id, "success");
+          },
+          (error) => {
+            updateWidgetStatus(widget.id, "error", error);
+            toast.error(
+              `Widget "${widget.title}" failed to fetch data: ${error}`
+            );
+          }
+        );
+      }
     });
-  };
+
+    // Cleanup: stop all polling on unmount
+    return () => {
+      pollingWidgetsRef.current.clear();
+      ApiService.stopAllPolling();
+    };
+  }, [mounted, widgets.length, setWidgetData, updateWidgetStatus]);
 
   const handleLayoutChange = (
     currentLayout: Layout,
@@ -79,29 +107,25 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-white">Dashboard</h1>
           <p className="text-slate-400 mt-1">Manage your financial widgets</p>
         </div>
-        <Button
-          onClick={handleAddWidget}
-          className="rounded-lg bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 px-6 py-3 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-        >
-          <Plus />
-          Add Widget
-        </Button>
+        <AddWidgetDialog title="Add Widget" />
       </div>
 
       <div className="w-full" ref={containerRef}>
         <Responsive
           className="layout"
           layouts={{ lg: widgetsToLayouts(widgets) }}
-          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-          rowHeight={60}
+          breakpoints={GRID_CONFIG.breakpoints}
+          cols={GRID_CONFIG.cols}
+          rowHeight={GRID_CONFIG.rowHeight}
+          margin={GRID_CONFIG.margin}
+          containerPadding={GRID_CONFIG.containerPadding}
           width={containerWidth}
           onLayoutChange={handleLayoutChange}
         >
           {widgets.map((widget) => (
             <div
               key={widget.id}
-              className="rounded-lg border border-slate-700/50 bg-slate-800/30 shadow-xl backdrop-blur-sm hover:border-slate-600/50 transition-colors"
+              className="rounded-lg border border-slate-700/50 bg-slate-800/30 shadow-xl backdrop-blur-sm hover:border-slate-600/50 transition-colors overflow-hidden flex flex-col"
             >
               <div className="flex cursor-move items-center justify-between border-b border-slate-700/50 bg-slate-900/50 px-4 py-3">
                 <h3 className="font-semibold text-white">{widget.title}</h3>
@@ -112,23 +136,14 @@ export default function DashboardPage() {
                   Remove
                 </button>
               </div>
-              <div className="p-4">
-                <div className="space-y-2 text-sm text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500">Type:</span>
-                    <span className="text-emerald-400">{widget.type}</span>
+              <div className="flex-1 min-h-0">
+                {widget.type === "card" && <CardWidget widget={widget} />}
+                {widget.type === "table" && <TableWidget widget={widget} />}
+                {widget.type === "chart" && (
+                  <div className="flex items-center justify-center h-full min-h-[200px] text-slate-400">
+                    Chart widget coming soon
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500">Status:</span>
-                    <span className="text-blue-400">{widget.status}</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-slate-500">Fields:</span>
-                    <span className="text-slate-300">
-                      {widget.config.fields.join(", ")}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           ))}
@@ -139,14 +154,7 @@ export default function DashboardPage() {
         <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-slate-700/50 bg-slate-800/20">
           <div className="text-center">
             <p className="mb-4 text-slate-400 text-lg">No widgets yet</p>
-            <Button
-              onClick={handleAddWidget}
-              variant="ghost"
-              className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
-            >
-              <Plus />
-              Add your first widget
-            </Button>
+            <AddWidgetDialog title="Add your first widget" />
           </div>
         </div>
       )}

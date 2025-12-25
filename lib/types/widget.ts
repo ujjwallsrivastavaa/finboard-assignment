@@ -3,23 +3,110 @@
  * Comprehensive type system for dashboard widgets
  */
 
-import { Layout, LayoutItem } from "react-grid-layout";
+import type { LayoutItem } from "react-grid-layout";
+import type { SelectedField } from "./field";
+import type { ApiAuthentication } from "./api";
+import type { ChartConfig } from "./chart";
 
-export type WidgetType = "table" | "chart";
+/**
+ * Supported widget types
+ */
+export type WidgetType = "table" | "chart" | "card";
+
+/**
+ * Widget status states
+ */
+export type WidgetStatus = "idle" | "loading" | "success" | "error";
+
+/**
+ * Generic data record type for widget data
+ */
+export type DataRecord = Record<string, string | number | boolean | null>;
+
+/**
+ * Widget data structure
+ */
+export interface WidgetData {
+  /** Array of data records */
+  records: DataRecord[];
+  /** Total count of records */
+  totalCount: number;
+  /** Timestamp of last fetch */
+  fetchedAt: number;
+  /** Metadata about the data */
+  metadata?: {
+    source?: string;
+    version?: string;
+    [key: string]: string | number | boolean | undefined;
+  };
+}
+
+/**
+ * Chart configuration types - imported from chart.ts
+ */
+export type {
+  ChartType,
+  ChartConfig,
+  ChartDefinition,
+  CandlestickFieldMapping,
+  chartDefinitions,
+} from "./chart";
+
+/**
+ * Base configuration shared by all widget types
+ */
+interface BaseWidgetConfig {
+  /** API endpoint URL for data fetching */
+  apiEndpoint: string;
+  /** Refresh interval in milliseconds */
+  refreshInterval?: number;
+  /** Authentication configuration */
+  authentication?: ApiAuthentication;
+  /** Custom headers for API requests (merged with auth headers) */
+  headers?: Record<string, string>;
+  /** HTTP method for API requests */
+  method?: "GET";
+  /** Request body for POST requests */
+  body?: Record<string, unknown>;
+}
 
 /**
  * Widget configuration for data fetching and display
+ * Uses discriminated union based on widget type
  */
-export interface WidgetConfig {
-  apiEndpoint: string;
-  refreshInterval?: number; // in milliseconds
-  fields: string[]; // Array of field names
-  chartConfig?: {
-    type: "line" | "bar" | "pie" | "area" | "scatter";
-    xAxis: string;
-    yAxis: string[];
-    colors?: string[];
-  };
+export type WidgetConfig =
+  | (BaseWidgetConfig & {
+      /** Widget type: card or table */
+      type: "card" | "table";
+      /** Selected fields with metadata (supports dot notation paths) */
+      fields: SelectedField[];
+    })
+  | (BaseWidgetConfig & {
+      /** Widget type: chart */
+      type: "chart";
+      /** Chart-specific configuration */
+      chartConfig: ChartConfig;
+    });
+
+/**
+ * Type guard to check if config is for card/table widget
+ */
+export function isCardTableConfig(
+  config: WidgetConfig
+): config is BaseWidgetConfig & {
+  type: "card" | "table";
+  fields: SelectedField[];
+} {
+  return config.type === "card" || config.type === "table";
+}
+
+/**
+ * Type guard to check if config is for chart widget
+ */
+export function isChartConfig(
+  config: WidgetConfig
+): config is BaseWidgetConfig & { type: "chart"; chartConfig: ChartConfig } {
+  return config.type === "chart";
 }
 
 /**
@@ -31,21 +118,35 @@ export type LayoutInput = Omit<LayoutItem, "i">;
  * Main Widget interface
  */
 export interface Widget {
+  /** Unique identifier for the widget */
   id: string;
+  /** Type of widget (table, chart, card) */
   type: WidgetType;
+  /** Display title */
   title: string;
+  /** Grid layout configuration */
   layout: LayoutItem;
+  /** Widget configuration */
   config: WidgetConfig;
-  data?: any;
-  status: "idle" | "loading" | "success" | "error";
+  /** Fetched data */
+  data?: WidgetData;
+  /** Current status */
+  status: WidgetStatus;
+  /** Error message if status is 'error' */
   error?: string;
+  /** Timestamp of last update */
   lastUpdated?: number;
+  /** Creation timestamp */
+  createdAt: number;
 }
 
 /**
- * Widget input type for adding widgets (omits id, lastUpdated, and layout.i)
+ * Widget input type for adding widgets (omits id, lastUpdated, createdAt, and layout.i)
  */
-export type WidgetInput = Omit<Widget, "id" | "lastUpdated" | "layout"> & {
+export type WidgetInput = Omit<
+  Widget,
+  "id" | "lastUpdated" | "createdAt" | "layout"
+> & {
   layout: LayoutInput;
 };
 
@@ -55,40 +156,3 @@ export type WidgetInput = Omit<Widget, "id" | "lastUpdated" | "layout"> & {
 export type WidgetUpdate = Partial<Omit<Widget, "id" | "layout">> & {
   layout?: LayoutInput;
 };
-
-/**
- * Dashboard Store State
- */
-export interface DashboardState {
-  widgets: Widget[];
-  selectedWidgetId: string | null;
-}
-
-/**
- * Dashboard Store Actions
- */
-export interface DashboardActions {
-  // Widget CRUD operations
-  addWidget: (widget: WidgetInput) => void;
-  removeWidget: (id: string) => void;
-  updateWidget: (id: string, updates: WidgetUpdate) => void;
-
-  updateWidgetLayout: (id: string, layout: LayoutItem) => void;
-  updateAllWidgetLayouts: (layouts: Layout) => void;
-
-  setWidgetData: (id: string, data: any[]) => void;
-  updateWidgetStatus: (
-    id: string,
-    status: Widget["status"],
-    error?: string
-  ) => void;
-
-  selectWidget: (id: string | null) => void;
-
-  clearAllWidgets: () => void;
-}
-
-/**
- * Complete Dashboard Store type
- */
-export type DashboardStore = DashboardState & DashboardActions;

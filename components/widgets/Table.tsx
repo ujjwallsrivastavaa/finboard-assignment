@@ -1,0 +1,135 @@
+"use client";
+
+import { useEffect } from "react";
+import {
+  Table as TableUI,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ApiService } from "@/lib/services";
+import { useDashboardStore } from "@/lib/store/useDashboardStore";
+import type { Widget } from "@/lib/types/widget";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+interface TableWidgetProps {
+  widget: Widget;
+}
+
+export default function TableWidget({ widget }: TableWidgetProps) {
+  const { setWidgetData, updateWidgetStatus } = useDashboardStore();
+
+  useEffect(() => {
+    // Only fetch if we don't have data yet
+    if (!widget.data && widget.status === "idle") {
+      fetchData();
+    }
+  }, [widget.id]);
+
+  const fetchData = async () => {
+    updateWidgetStatus(widget.id, "loading");
+
+    const result = await ApiService.fetchWidgetData(widget.id, widget.config);
+
+    if (result.success && result.data) {
+      setWidgetData(widget.id, result.data);
+      updateWidgetStatus(widget.id, "success");
+    } else {
+      updateWidgetStatus(widget.id, "error", result.error);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchData();
+  };
+
+  if (widget.status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[200px]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (widget.status === "error") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[200px] gap-4 p-6">
+        <AlertCircle className="w-12 h-12 text-red-500" />
+        <p className="text-sm text-red-400 text-center">{widget.error}</p>
+        <Button
+          onClick={handleRefresh}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (!widget.data || widget.data.records.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[200px] text-slate-400">
+        No data available
+      </div>
+    );
+  }
+
+  // Get selected fields from config
+  const fields =
+    widget.config.type === "card" || widget.config.type === "table"
+      ? widget.config.fields
+      : [];
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="bg-slate-800 border-b border-slate-700/50">
+        <TableUI>
+          <TableHeader>
+            <TableRow className="hover:bg-slate-800/60">
+              {fields.map((field) => (
+                <TableHead
+                  key={field.path}
+                  className="text-emerald-400 font-semibold text-xs uppercase tracking-wide bg-slate-800 py-3"
+                >
+                  {field.name}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+        </TableUI>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <TableUI>
+          <TableBody>
+            {widget.data.records.map((record, index) => (
+              <TableRow
+                key={index}
+                className="hover:bg-slate-700/30 border-b border-slate-700/30"
+              >
+                {fields.map((field) => {
+                  const value = record[field.path];
+                  return (
+                    <TableCell
+                      key={`${index}-${field.path}`}
+                      className="text-slate-200 text-sm py-3"
+                    >
+                      {value !== null && value !== undefined
+                        ? String(value)
+                        : "N/A"}
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </TableUI>
+      </div>
+    </div>
+  );
+}
