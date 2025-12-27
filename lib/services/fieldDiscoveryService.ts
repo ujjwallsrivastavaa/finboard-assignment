@@ -8,9 +8,9 @@ import type {
   FieldType,
   FieldDiscoveryResult,
   PrimitiveType,
-  ComplexType,
   SelectedField,
 } from "../types/field";
+import { isFinancialTimeSeries, isDateString } from "../utils/dataTransform";
 
 /**
  * Service for discovering and analyzing fields from API responses
@@ -26,55 +26,39 @@ export class FieldDiscoveryService {
     const jsType = typeof value;
     if (jsType === "object") return "object";
 
-    // Check if string value looks like a date
-    if (jsType === "string" && this.isDateString(value as string)) {
-      return "date";
+    // If it's a string, try to parse it
+    if (jsType === "string") {
+      const strValue = value as string;
+      const trimmed = strValue.trim();
+
+      // Check for boolean strings
+      if (
+        trimmed.toLowerCase() === "true" ||
+        trimmed.toLowerCase() === "false"
+      ) {
+        return "boolean";
+      }
+
+      // Check if string value looks like a date
+      if (isDateString(trimmed)) {
+        return "date";
+      }
+
+      // Check if it's a numeric string
+      if (trimmed !== "" && !isNaN(Number(trimmed))) {
+        return "number";
+      }
+
+      return "string";
     }
 
     return jsType as FieldType;
   }
 
   /**
-   * Checks if a string value looks like a date
-   */
-  private static isDateString(value: string): boolean {
-    // Check for common date formats
-    const datePatterns = [
-      /^\d{4}-\d{2}-\d{2}/, // ISO date: 2024-12-25
-      /^\d{4}\/\d{2}\/\d{2}/, // US date: 2024/12/25
-      /^\d{2}\/\d{2}\/\d{4}/, // US date: 12/25/2024
-      /^\d{2}-\d{2}-\d{4}/, // EU date: 25-12-2024
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, // ISO datetime
-    ];
-
-    // Check if it matches any date pattern
-    if (datePatterns.some((pattern) => pattern.test(value))) {
-      const date = new Date(value);
-      // Verify it's a valid date
-      return !isNaN(date.getTime());
-    }
-
-    return false;
-  }
-
-  /**
-   * Checks if a type is primitive (leaf node)
-   */
-  static isPrimitive(type: FieldType): type is PrimitiveType {
-    return ["string", "number", "boolean", "null", "date"].includes(type);
-  }
-
-  /**
-   * Checks if a type is complex (has children)
-   */
-  static isComplex(type: FieldType): type is ComplexType {
-    return ["object", "array"].includes(type);
-  }
-
-  /**
    * Builds a hierarchical field tree from an object
    */
-  static buildFieldTree(obj: any, prefix = ""): FieldNode[] {
+  static buildFieldTree(obj: unknown, prefix = ""): FieldNode[] {
     const fields: FieldNode[] = [];
 
     if (!obj || typeof obj !== "object") {
@@ -195,13 +179,6 @@ export class FieldDiscoveryService {
   }
 
   /**
-   * Checks if a path is a descendant of another path
-   */
-  static isDescendantOf(childPath: string, parentPath: string): boolean {
-    return childPath.startsWith(parentPath + ".");
-  }
-
-  /**
    * Creates a SelectedField from a field node
    */
   static createSelectedField(
@@ -217,55 +194,143 @@ export class FieldDiscoveryService {
   }
 
   /**
-   * Creates SelectedFields from field paths
+   * Flattens field tree to get all selectable primitive fields
+   * Useful for dropdowns and field selection in charts
    */
-  static createSelectedFieldsFromPaths(
-    paths: string[],
-    allFields: FieldNode[]
-  ): SelectedField[] {
-    return paths.map((path, index) => {
-      const field = this.findFieldByPath(allFields, path);
-      if (field) {
-        return this.createSelectedField(field, index);
+  static flattenFields(
+    fields: FieldNode[],
+    allowedTypes?: PrimitiveType[]
+  ): Array<{ path: string; name: string; type: PrimitiveType }> {
+    const result: Array<{ path: string; name: string; type: PrimitiveType }> =
+      [];
+
+    const traverse = (nodes: FieldNode[]) => {
+      for (const node of nodes) {
+        // Only include primitive types
+        if (
+          node.type !== "object" &&
+          node.type !== "array" &&
+          (!allowedTypes || allowedTypes.includes(node.type as PrimitiveType))
+        ) {
+          result.push({
+            path: node.path,
+            name: node.name,
+            type: node.type as PrimitiveType,
+          });
+        }
+        if (node.children) {
+          traverse(node.children);
+        }
       }
-      // Fallback if field not found
-      const name = path.split(".").pop() || path;
-      return {
-        path,
-        name,
-        type: "string" as FieldType,
-        label: name,
-        order: index,
-      };
-    });
+    };
+
+    traverse(fields);
+    return result;
   }
 
   /**
-   * Extracts paths from SelectedFields
+   * Finds all array fields in the response
    */
-  static extractPaths(selectedFields: SelectedField[]): string[] {
-    return selectedFields.map((field) => field.path);
+  static findArrayPaths(
+    fields: FieldNode[]
+  ): Array<{ path: string; name: string }> {
+    const arrays: Array<{ path: string; name: string }> = [];
+
+    const traverse = (nodes: FieldNode[]) => {
+      for (const node of nodes) {
+        if (node.type === "array") {
+          arrays.push({ path: node.path, name: node.name });
+        }
+        if (node.children) {
+          traverse(node.children);
+        }
+      }
+    };
+
+    traverse(fields);
+    return arrays;
   }
 
   /**
-   * Validates selected fields
+   * Finds all financial time-series objects in the response
    */
-  static validateSelectedFields(
-    selectedFields: SelectedField[],
-    allFields: FieldNode[]
-  ): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    const allPaths = this.getAllPaths(allFields);
+  static findFinancialTimeSeriesPaths(
+    data: unknown,
+    prefix = ""
+  ): Array<{ path: string; name: string }> {
+    const financialPaths: Array<{ path: string; name: string }> = [];
 
-    for (const selected of selectedFields) {
-      if (!allPaths.includes(selected.path)) {
-        errors.push(`Field path "${selected.path}" does not exist`);
+    if (!data || typeof data !== "object") {
+      return financialPaths;
+    }
+
+    for (const [key, value] of Object.entries(data)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+
+      // Check if this value is a financial time series
+      if (isFinancialTimeSeries(value)) {
+        financialPaths.push({ path, name: key });
+      }
+
+      // Recurse into nested objects (but not arrays or financial time series)
+      if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        !isFinancialTimeSeries(value)
+      ) {
+        financialPaths.push(...this.findFinancialTimeSeriesPaths(value, path));
       }
     }
 
+    return financialPaths;
+  }
+
+  /**
+   * Analyzes data structure to determine what widget types are possible
+   */
+  static analyzeDataStructure(data: unknown): {
+    isRootArray: boolean;
+    hasArrays: boolean;
+    hasFinancialTimeSeries: boolean;
+    arrayPaths: Array<{ path: string; name: string }>;
+    financialPaths: Array<{ path: string; name: string }>;
+    allowedModes: Array<"card" | "table" | "chart">;
+  } {
+    const isRootArray = Array.isArray(data);
+    const fields =
+      isRootArray && data.length > 0
+        ? this.buildFieldTree(data[0])
+        : typeof data === "object" && data !== null
+        ? this.buildFieldTree(data)
+        : [];
+
+    const arrayPaths = this.findArrayPaths(fields);
+    const financialPaths = this.findFinancialTimeSeriesPaths(data);
+
+    const hasArrays = arrayPaths.length > 0;
+    const hasFinancialTimeSeries = financialPaths.length > 0;
+
+    let allowedModes: Array<"card" | "table" | "chart">;
+
+    if (isRootArray) {
+      // Case 3: Root is array - only table and chart
+      allowedModes = ["table", "chart"];
+    } else if (hasArrays || hasFinancialTimeSeries) {
+      // Case 2 & 4: Has arrays or financial data - only table and chart
+      allowedModes = ["table", "chart"];
+    } else {
+      // Case 1: Pure object - only card
+      allowedModes = ["card"];
+    }
+
     return {
-      valid: errors.length === 0,
-      errors,
+      isRootArray,
+      hasArrays,
+      hasFinancialTimeSeries,
+      arrayPaths,
+      financialPaths,
+      allowedModes,
     };
   }
 }

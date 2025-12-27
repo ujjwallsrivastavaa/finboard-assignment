@@ -20,7 +20,17 @@ import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
 
 interface Step1ConfigProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<{
+    widgetTitle: string;
+    apiEndpoint: string;
+    refreshInterval: number;
+    requiresAuth: boolean;
+    authType: "none" | "bearer" | "api-key" | "basic";
+    authToken?: string;
+    authHeaderName?: string;
+    authUsername?: string;
+    authPassword?: string;
+  }>;
   title: string;
   isTestingApi: boolean;
   onSubmit: () => void;

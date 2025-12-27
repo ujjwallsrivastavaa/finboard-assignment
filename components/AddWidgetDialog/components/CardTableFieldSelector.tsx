@@ -1,23 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import { UseFormReturn } from "react-hook-form";
 import { Reorder } from "framer-motion";
 import { FieldItem } from "./FieldItem";
 import { FieldDiscoveryService } from "@/lib/services/fieldDiscoveryService";
 import { AvailableFieldsTree } from "./AvailableFieldsTree";
 import type { FieldNode, SelectedField } from "@/lib/types/field";
+import type { ApiAuthentication } from "@/lib/types/api";
+import { Button } from "../../ui/button";
+import { ChevronRight } from "lucide-react";
+import { WidgetConfigForFormatting } from "@/lib/types/widget";
 
 interface CardTableFieldSelectorProps {
+  form: UseFormReturn<{
+    widgetTitle: string;
+    apiEndpoint: string;
+    refreshInterval: number;
+    requiresAuth: boolean;
+    authType: "none" | "bearer" | "api-key" | "basic";
+    authToken?: string;
+    authHeaderName?: string;
+    authUsername?: string;
+    authPassword?: string;
+  }>;
   apiFields: FieldNode[];
-  selectedFields: SelectedField[];
-  setSelectedFields: React.Dispatch<React.SetStateAction<SelectedField[]>>;
+  displayMode: "card" | "table";
+  dataPath: string | null;
+  isFinancialData?: boolean;
+  onProceedToFormatting: (
+    fields: SelectedField[],
+    config: WidgetConfigForFormatting
+  ) => void;
+  onCancel: () => void;
 }
 
 export const CardTableFieldSelector = ({
+  form,
   apiFields,
-  selectedFields,
-  setSelectedFields,
+  displayMode,
+  dataPath,
+  isFinancialData = false,
+  onProceedToFormatting,
+  onCancel,
 }: CardTableFieldSelectorProps) => {
+  const [selectedFields, setSelectedFields] = useState<SelectedField[]>([]);
   const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
 
   const toggleFieldExpansion = (path: string): void => {
@@ -56,6 +83,57 @@ export const CardTableFieldSelector = ({
       field.order = idx;
     });
     setSelectedFields(newFields);
+  };
+
+  const handleProceedToFormatting = (): void => {
+    const values = form.getValues();
+    let authentication: ApiAuthentication | undefined;
+
+    if (values.requiresAuth) {
+      switch (values.authType) {
+        case "bearer":
+          authentication = { type: "bearer", token: values.authToken || "" };
+          break;
+        case "api-key":
+          authentication = {
+            type: "api-key",
+            headerName: values.authHeaderName || "",
+            apiKey: values.authToken || "",
+          };
+          break;
+        case "basic":
+          authentication = {
+            type: "basic",
+            username: values.authUsername || "",
+            password: values.authPassword || "",
+          };
+          break;
+      }
+    }
+
+    // For financial data, don't prefix paths since fields are from normalized array
+    // For regular arrays, prefix with dataPath
+    const fieldsWithFullPath = selectedFields.map((field) => ({
+      ...field,
+      path: isFinancialData
+        ? field.path // Keep as-is for financial (date, open, close, etc.)
+        : dataPath
+        ? `${dataPath}.${field.path}` // Prefix for nested arrays
+        : field.path, // Root level
+    }));
+
+    const widgetConfig: WidgetConfigForFormatting = {
+      type: displayMode,
+      title: values.widgetTitle,
+      apiEndpoint: values.apiEndpoint,
+      refreshInterval: values.refreshInterval,
+      authentication,
+      isFinancialData,
+      dataPath: dataPath || undefined,
+      displayMode,
+    };
+
+    onProceedToFormatting(fieldsWithFullPath, widgetConfig);
   };
 
   return (
@@ -120,6 +198,29 @@ export const CardTableFieldSelector = ({
         <p className="text-xs text-slate-500 mt-2">
           Drag to reorder or use arrows. Order determines display sequence.
         </p>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="col-span-2 flex justify-between gap-2 pt-4 border-t border-slate-700/50">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          className="border-slate-600 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-colors"
+        >
+          Cancel
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={handleProceedToFormatting}
+            disabled={selectedFields.length === 0}
+            className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 gap-2"
+          >
+            Next: Configure Formatting
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

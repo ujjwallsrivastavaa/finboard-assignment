@@ -133,8 +133,8 @@ export default function HomePage() {
                 </h4>
                 <p className="text-slate-400">
                   Your dashboard layout and configuration are automatically
-                  saved to your browser's local storage. Refresh the page and
-                  everything stays exactly as you left it.
+                  saved to your browser&apos;s local storage. Refresh the page
+                  and everything stays exactly as you left it.
                 </p>
               </div>
             </div>

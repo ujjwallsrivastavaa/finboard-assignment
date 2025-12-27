@@ -251,30 +251,53 @@ export const useDashboardStore = create<DashboardStore>()(
         return JSON.stringify(exportData, null, 2);
       },
 
+      exportAllWidgets: (): string => {
+        const widgets = get().widgets;
+        if (widgets.length === 0) {
+          throw new Error("No widgets to export");
+        }
+
+        const exportData = {
+          widgets: widgets,
+          exportedAt: Date.now(),
+          version: "1.0.0",
+          count: widgets.length,
+        };
+
+        return JSON.stringify(exportData, null, 2);
+      },
+
       importWidget: (json: string): void => {
         try {
-          const parsed = JSON.parse(json) as Widget;
+          const parsed = JSON.parse(json);
 
-          // Create new widget from imported data
-          const newId = generateWidgetId(parsed.title);
+          // Check if it's an array of widgets or a single widget
+          const isMultipleWidgets =
+            parsed.widgets && Array.isArray(parsed.widgets);
+          const widgetsToImport: Widget[] = isMultipleWidgets
+            ? parsed.widgets
+            : [parsed];
+
           const now = Date.now();
-
-          const importedWidget: Widget = {
-            ...parsed,
-            id: newId,
-            layout: {
-              ...parsed.layout,
-              i: newId,
-            },
-            createdAt: now,
-            lastUpdated: now,
-          };
+          const importedWidgets: Widget[] = widgetsToImport.map((widget) => {
+            const newId = generateWidgetId(widget.title);
+            return {
+              ...widget,
+              id: newId,
+              layout: {
+                ...widget.layout,
+                i: newId,
+              },
+              createdAt: now,
+              lastUpdated: now,
+            };
+          });
 
           set((state) => ({
-            widgets: [...state.widgets, importedWidget],
+            widgets: [...state.widgets, ...importedWidgets],
           }));
         } catch (error) {
-          console.error("Failed to import widget:", error);
+          console.error("Failed to import widget(s):", error);
           throw new Error("Invalid widget JSON format");
         }
       },
@@ -291,7 +314,7 @@ export const useDashboardStore = create<DashboardStore>()(
       }),
 
       // Optional: Handle migration between versions
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: unknown, version: number) => {
         if (version === 0) {
           // Migration logic from version 0 to 1
           // Example: add new fields, transform data structure

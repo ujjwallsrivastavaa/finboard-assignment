@@ -9,6 +9,63 @@
 export type PrimitiveType = "string" | "number" | "boolean" | "null" | "date";
 
 /**
+ * Format types for data display
+ */
+export type FormatType =
+  | "none"
+  | "currency"
+  | "percentage"
+  | "number"
+  | "date"
+  | "datetime"
+  | "time"
+  | "compact-number"
+  | "decimal";
+
+/**
+ * Currency codes (ISO 4217)
+ */
+export type CurrencyCode =
+  | "USD"
+  | "EUR"
+  | "GBP"
+  | "JPY"
+  | "CNY"
+  | "INR"
+  | "AUD"
+  | "CAD"
+  | "CHF";
+
+/**
+ * Format configuration for a field
+ */
+export interface FieldFormat {
+  /** Type of formatting to apply */
+  type: FormatType;
+
+  /** Currency code for currency formatting */
+  currency?: CurrencyCode;
+
+  /** Number of decimal places */
+  decimals?: number;
+
+  /** Locale for number formatting (default: 'en-US') */
+  locale?: string;
+
+  /** Prefix to add before value */
+  prefix?: string;
+
+  /** Suffix to add after value */
+  suffix?: string;
+
+  /** Whether to show + sign for positive numbers */
+  showSign?: boolean;
+
+  /** Date format string (for date types) */
+  dateFormat?: string;
+}
+
+/**
  * Complex data types for nested structures
  */
 export type ComplexType = "object" | "array";
@@ -70,6 +127,9 @@ export interface SelectedField {
 
   /** Field order in display */
   order: number;
+
+  /** Format configuration for display */
+  format?: FieldFormat;
 }
 
 /**

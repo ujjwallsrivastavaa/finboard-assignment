@@ -1,109 +1,180 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
-import {
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../../ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription } from "../../ui/dialog";
 import { Button } from "../../ui/button";
-import type { FieldNode, SelectedField } from "@/lib/types/field";
-import type { WidgetInput } from "@/lib/types/widget";
-import type { ApiAuthentication } from "@/lib/types/api";
-import type { ChartConfig } from "@/lib/types/chart";
-import { useDashboardStore } from "@/lib/store/useDashboardStore";
-import { useCustomToast } from "@/lib/hooks/useToast";
-import { getDefaultLayout } from "@/lib/constants/widgetDefaults";
-import { CardTableFieldSelector } from "../components/CardTableFieldSelector";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../ui/select";
+import { Label } from "../../ui/label";
+import type { FieldNode } from "@/lib/types/field";
 import ChartFieldSelector from "../components/ChartFieldSelector";
+import { FieldDiscoveryService } from "@/lib/services/fieldDiscoveryService";
+import { getNestedValue } from "@/lib/utils/dataTransform";
+import type { SelectedField } from "@/lib/types/field";
+import type { WidgetConfigForFormatting } from "@/lib/types/widget";
+import { CardTableFieldSelector } from "../components/CardTableFieldSelector";
 
 interface Step2FieldSelectorProps {
-  form: UseFormReturn<any>;
-  isArrayResponse: boolean;
+  form: UseFormReturn<{
+    widgetTitle: string;
+    apiEndpoint: string;
+    refreshInterval: number;
+    requiresAuth: boolean;
+    authType: "none" | "bearer" | "api-key" | "basic";
+    authToken?: string;
+    authHeaderName?: string;
+    authUsername?: string;
+    authPassword?: string;
+  }>;
   apiFields: FieldNode[];
+  dataStructure: ReturnType<
+    typeof FieldDiscoveryService.analyzeDataStructure
+  > | null;
+  rawApiData: unknown;
   onBack: () => void;
+  onProceedToFormatting: (
+    fields: SelectedField[],
+    config: WidgetConfigForFormatting
+  ) => void;
   onSuccess: () => void;
 }
 
 export const Step2FieldSelector = ({
   form,
-  isArrayResponse,
   apiFields,
+  dataStructure,
+  rawApiData,
   onBack,
+  onProceedToFormatting,
   onSuccess,
 }: Step2FieldSelectorProps) => {
-  const [selectedFields, setSelectedFields] = useState<SelectedField[]>([]);
+  // Determine initial display mode based on allowed modes
+  const initialMode = dataStructure?.allowedModes?.[0] || "card";
   const [displayMode, setDisplayMode] = useState<"card" | "table" | "chart">(
-    isArrayResponse ? "table" : "card"
+    initialMode
   );
-  const [chartConfig, setChartConfig] = useState<ChartConfig | undefined>();
 
-  const { addWidget } = useDashboardStore();
-  const toast = useCustomToast();
+  // Get available data source options (arrays + financial time series)
+  const dataSourceOptions = useMemo(() => {
+    if (!dataStructure) return [];
 
-  const handleSubmit = (): void => {
-    const values = form.getValues();
-    let authentication: ApiAuthentication | undefined;
+    const options: Array<{
+      path: string;
+      name: string;
+      type: "array" | "financial";
+    }> = [];
 
-    if (values.requiresAuth) {
-      switch (values.authType) {
-        case "bearer":
-          authentication = { type: "bearer", token: values.authToken || "" };
-          break;
-        case "api-key":
-          authentication = {
-            type: "api-key",
-            headerName: values.authHeaderName || "",
-            apiKey: values.authToken || "",
+    // Add array paths
+    if (dataStructure.arrayPaths) {
+      dataStructure.arrayPaths.forEach(
+        (item: { path: string; name: string }) => {
+          options.push({ ...item, type: "array" });
+        }
+      );
+    }
+
+    // Add financial time series paths
+    if (dataStructure.financialPaths) {
+      dataStructure.financialPaths.forEach(
+        (item: { path: string; name: string }) => {
+          options.push({ ...item, type: "financial" });
+        }
+      );
+    }
+
+    return options;
+  }, [dataStructure]);
+
+  // Derive initial selected data path
+  const getInitialDataPath = () => {
+    if (dataStructure?.isRootArray) {
+      return null; // Root is already array, no selection needed
+    }
+    if (dataSourceOptions.length === 1) {
+      return dataSourceOptions[0].path; // Auto-select if only one option
+    }
+    return null; // User must choose manually
+  };
+
+  // Track selected data source path (for arrays or financial time series)
+  const [selectedDataPath, setSelectedDataPath] = useState<string | null>(
+    getInitialDataPath
+  );
+
+  // Get fields to display based on selected data source
+  const displayFields = useMemo(() => {
+    if (!selectedDataPath) {
+      return apiFields; // Use root fields
+    }
+
+    // Check if selected path is a financial time series
+    const selectedOption = dataSourceOptions.find(
+      (opt) => opt.path === selectedDataPath
+    );
+    const isFinancialSeries = selectedOption?.type === "financial";
+
+    // Find the field node for the selected path
+    const selectedField = FieldDiscoveryService.findFieldByPath(
+      apiFields,
+      selectedDataPath
+    );
+
+    if (selectedField?.children && !isFinancialSeries) {
+      return selectedField.children;
+    }
+
+    // For financial time series, normalize and build fields including the date
+    if (isFinancialSeries) {
+      const nestedData = getNestedValue(rawApiData, selectedDataPath);
+      if (
+        nestedData &&
+        typeof nestedData === "object" &&
+        !Array.isArray(nestedData)
+      ) {
+        const firstEntry = Object.values(nestedData)[0];
+
+        if (firstEntry && typeof firstEntry === "object") {
+          const fields = FieldDiscoveryService.buildFieldTree(
+            firstEntry as Record<string, unknown>
+          );
+
+          // Add the date field at the beginning
+          const dateField: FieldNode = {
+            name: "date",
+            path: "date",
+            type: "date",
           };
-          break;
-        case "basic":
-          authentication = {
-            type: "basic",
-            username: values.authUsername || "",
-            password: values.authPassword || "",
-          };
-          break;
+
+          return [dateField, ...fields];
+        }
       }
     }
 
-    const widgetType = displayMode === "chart" ? "chart" : displayMode;
+    return apiFields;
+  }, [selectedDataPath, apiFields, rawApiData, dataSourceOptions]);
 
-    const widgetInput: WidgetInput = {
-      type: widgetType,
-      title: values.widgetTitle,
-      layout: getDefaultLayout(widgetType, {
-        fieldCount: selectedFields.length,
-      }),
-      config:
-        displayMode === "chart" && chartConfig
-          ? {
-              type: "chart" as const,
-              apiEndpoint: values.apiEndpoint,
-              chartConfig,
-              refreshInterval: values.refreshInterval,
-              authentication,
-            }
-          : {
-              type: displayMode as "card" | "table",
-              apiEndpoint: values.apiEndpoint,
-              fields: selectedFields,
-              refreshInterval: values.refreshInterval,
-              authentication,
-            },
-      status: "idle",
-    };
+  const allowedModes = dataStructure?.allowedModes || [
+    "card",
+    "table",
+    "chart",
+  ];
 
-    addWidget(widgetInput);
-    toast.success("Widget Added", {
-      description: `${values.widgetTitle} has been added to your dashboard.`,
-    });
-    onSuccess();
-  };
+  // Determine if selected data path is financial
+  const isFinancialDataPath = useMemo(() => {
+    if (!selectedDataPath) return false;
+    const selectedOption = dataSourceOptions.find(
+      (opt) => opt.path === selectedDataPath
+    );
+    return selectedOption?.type === "financial";
+  }, [selectedDataPath, dataSourceOptions]);
 
   return (
     <motion.div
@@ -135,42 +206,91 @@ export const Step2FieldSelector = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          {/* Data Source Selector - Show for arrays or financial time series */}
+          {dataSourceOptions.length > 0 && !dataStructure?.isRootArray && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-slate-300 font-medium text-sm">
+                  Data Source{" "}
+                  {dataSourceOptions.length > 1 && (
+                    <span className="text-emerald-400">*</span>
+                  )}
+                </Label>
+                {dataSourceOptions.length > 1 && (
+                  <span className="text-xs text-emerald-400">
+                    {dataSourceOptions.length} options available
+                  </span>
+                )}
+              </div>
+              <Select
+                value={selectedDataPath || ""}
+                onValueChange={(value) => {
+                  setSelectedDataPath(value);
+                }}
+              >
+                <SelectTrigger
+                  className={`bg-slate-800/50 border-slate-700 text-slate-200 ${
+                    !selectedDataPath && dataSourceOptions.length > 1
+                      ? "border-emerald-500/50 ring-1 ring-emerald-500/20"
+                      : ""
+                  }`}
+                >
+                  <SelectValue
+                    placeholder={
+                      dataSourceOptions.length > 1
+                        ? "Please select a data source to continue..."
+                        : "Select data source..."
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700">
+                  {dataSourceOptions.map((option) => (
+                    <SelectItem
+                      key={option.path}
+                      value={option.path}
+                      className="text-slate-200 focus:bg-slate-700 focus:text-white"
+                    >
+                      {option.path} (
+                      {option.type === "array"
+                        ? "Array"
+                        : "Financial Time Series"}
+                      )
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-400">
+                {selectedDataPath
+                  ? `Using data from "${selectedDataPath}" for Table or Chart view`
+                  : dataSourceOptions.length > 1
+                  ? "⚠️ Multiple data sources detected - please select one to continue"
+                  : "Select a data source to continue"}
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="text-slate-300 mb-3 block font-medium text-sm">
               Display Mode
             </label>
             <div className="flex gap-2">
               {[
-                {
-                  mode: "card" as const,
-                  label: "Card",
-                  requiresNonArray: true,
-                },
-                {
-                  mode: "table" as const,
-                  label: "Table",
-                  requiresArray: true,
-                },
-                {
-                  mode: "chart" as const,
-                  label: "Chart",
-                  requiresArray: true,
-                },
-              ].map(({ mode, label, requiresArray, requiresNonArray }) => {
-                const isDisabled =
-                  (requiresArray && !isArrayResponse) ||
-                  (requiresNonArray && isArrayResponse);
+                { mode: "card" as const, label: "Card" },
+                { mode: "table" as const, label: "Table" },
+                { mode: "chart" as const, label: "Chart" },
+              ].map(({ mode, label }) => {
+                const isAllowed = allowedModes.includes(mode);
                 return (
                   <Button
                     key={mode}
                     type="button"
-                    onClick={() => !isDisabled && setDisplayMode(mode)}
-                    disabled={isDisabled}
+                    onClick={() => isAllowed && setDisplayMode(mode)}
+                    disabled={!isAllowed}
                     className={`flex-1 transition-all ${
                       displayMode === mode
                         ? "bg-gradient-to-r from-emerald-500 to-blue-600 text-white"
-                        : isDisabled
-                        ? "bg-slate-800/30 text-slate-600 cursor-not-allowed"
+                        : !isAllowed
+                        ? "bg-slate-800/30 text-slate-600 cursor-not-allowed opacity-50"
                         : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50"
                     }`}
                   >
@@ -180,45 +300,48 @@ export const Step2FieldSelector = ({
               })}
             </div>
             <p className="text-xs text-slate-400 mt-2">
-              {isArrayResponse
-                ? "Table and Chart views are available for array responses."
-                : "Only Card view is available for single object responses."}
+              {dataStructure?.isRootArray
+                ? "Root data is an array - only Table and Chart modes available"
+                : dataStructure?.hasArrays ||
+                  dataStructure?.hasFinancialTimeSeries
+                ? "Array or financial data detected - only Table and Chart modes available"
+                : "Single object data - only Card mode available"}
             </p>
           </div>
 
           {/* Field Selector - Different for Card/Table vs Chart */}
-          {displayMode === "chart" ? (
-            <ChartFieldSelector />
+          {/* Show message if data source selection is required but not made */}
+          {dataSourceOptions.length > 1 && !selectedDataPath ? (
+            <div className="border border-emerald-500/30 bg-emerald-900/10 rounded-lg p-8 text-center">
+              <p className="text-emerald-400 font-medium mb-2">
+                Data Source Selection Required
+              </p>
+              <p className="text-slate-400 text-sm">
+                Multiple data sources detected. Please select one from the
+                dropdown above to continue configuring your widget.
+              </p>
+            </div>
+          ) : displayMode === "chart" ? (
+            <ChartFieldSelector
+              form={form}
+              apiFields={displayFields}
+              dataPath={selectedDataPath}
+              isFinancialData={isFinancialDataPath}
+              onProceedToFormatting={onProceedToFormatting}
+              onCancel={onSuccess}
+            />
           ) : (
             <CardTableFieldSelector
-              apiFields={apiFields}
-              selectedFields={selectedFields}
-              setSelectedFields={setSelectedFields}
+              form={form}
+              apiFields={displayFields}
+              displayMode={displayMode}
+              dataPath={selectedDataPath}
+              isFinancialData={isFinancialDataPath}
+              onProceedToFormatting={onProceedToFormatting}
+              onCancel={onSuccess}
             />
           )}
         </div>
-
-        <DialogFooter className="gap-2 px-6 py-4 border-t border-slate-700/50 flex-shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onSuccess}
-            className="border-slate-600 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-colors"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={
-              selectedFields.length === 0 ||
-              (displayMode === "chart" && !chartConfig)
-            }
-            className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
-          >
-            Add Widget
-          </Button>
-        </DialogFooter>
       </div>
     </motion.div>
   );

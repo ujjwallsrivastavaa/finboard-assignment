@@ -9,12 +9,14 @@ import { useCustomToast } from "@/lib/hooks/useToast";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import { Button } from "../ui/button";
-import type { FieldNode } from "@/lib/types/field";
+import type { FieldNode, SelectedField, FieldFormat } from "@/lib/types/field";
 import type { ApiTestResult, ApiAuthentication } from "@/lib/types/api";
+import type { WidgetConfigForFormatting } from "@/lib/types/widget";
 import { FieldDiscoveryService } from "@/lib/services/fieldDiscoveryService";
 import { ApiService } from "@/lib/services";
 import { Step1Config } from "./steps/Step1Config";
 import { Step2FieldSelector } from "./steps/Step2FieldSelector";
+import Step3FieldFormatting from "./steps/Step3FieldFormatting";
 
 const formSchema = z
   .object({
@@ -83,10 +85,16 @@ type FormSchema = z.infer<typeof formSchema>;
 
 const AddWidgetDialog = ({ title }: { title: string }) => {
   const [open, setOpen] = useState<boolean>(false);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isTestingApi, setIsTestingApi] = useState<boolean>(false);
   const [apiFields, setApiFields] = useState<FieldNode[]>([]);
-  const [isArrayResponse, setIsArrayResponse] = useState<boolean>(false);
+  const [dataStructure, setDataStructure] = useState<ReturnType<
+    typeof FieldDiscoveryService.analyzeDataStructure
+  > | null>(null);
+  const [rawApiData, setRawApiData] = useState<unknown>(null);
+  const [selectedFields, setSelectedFields] = useState<SelectedField[]>([]);
+  const [widgetConfig, setWidgetConfig] =
+    useState<WidgetConfigForFormatting | null>(null);
 
   const toast = useCustomToast();
 
@@ -150,8 +158,13 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
       }
 
       const discovery = FieldDiscoveryService.discover(result.data);
+      const structure = FieldDiscoveryService.analyzeDataStructure(result.data);
+
+      console.log({ result, discovery, structure });
+
       setApiFields(discovery.fields);
-      setIsArrayResponse(result.isArray);
+      setDataStructure(structure);
+      setRawApiData(result.data);
 
       toast.success("API Connected", {
         description: `Found ${discovery.totalFields} fields in ${result.responseTime}ms`,
@@ -178,7 +191,30 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
     form.reset();
     setStep(1);
     setApiFields([]);
-    setIsArrayResponse(false);
+    setDataStructure(null);
+    setRawApiData(null);
+    setSelectedFields([]);
+    setWidgetConfig(null);
+  };
+
+  const handleFieldFormatChange = (
+    fieldPath: string,
+    format: FieldFormat | undefined
+  ) => {
+    setSelectedFields((prevFields) =>
+      prevFields.map((field) =>
+        field.path === fieldPath ? { ...field, format } : field
+      )
+    );
+  };
+
+  const proceedToFormatting = (
+    fields: SelectedField[],
+    config: WidgetConfigForFormatting
+  ) => {
+    setSelectedFields(fields);
+    setWidgetConfig(config);
+    setStep(3);
   };
 
   return (
@@ -198,7 +234,7 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
       <DialogContent
         className={`
           !max-w-none bg-slate-900 border-slate-700/50 text-white p-0
-          ${step === 2 ? "!w-[95vw]" : "!w-[600px]"}
+          ${step === 2 ? "!w-[95vw]" : step === 3 ? "!w-[800px]" : "!w-[600px]"}
           max-h-[90vh] overflow-hidden
         `}
       >
@@ -217,9 +253,21 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
             {step === 2 && (
               <Step2FieldSelector
                 form={form}
-                isArrayResponse={isArrayResponse}
                 apiFields={apiFields}
+                dataStructure={dataStructure}
+                rawApiData={rawApiData}
                 onBack={() => setStep(1)}
+                onProceedToFormatting={proceedToFormatting}
+                onSuccess={resetDialog}
+              />
+            )}
+
+            {step === 3 && widgetConfig && (
+              <Step3FieldFormatting
+                selectedFields={selectedFields}
+                widgetConfig={widgetConfig}
+                onFieldFormatChange={handleFieldFormatChange}
+                onBack={() => setStep(2)}
                 onSuccess={resetDialog}
               />
             )}

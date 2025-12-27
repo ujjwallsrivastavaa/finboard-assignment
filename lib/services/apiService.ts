@@ -9,8 +9,14 @@ import type {
   ApiTestSuccess,
   ApiAuthentication,
 } from "../types/api";
-import type { Widget, WidgetData, WidgetConfig } from "../types/widget";
+import type { WidgetData, WidgetConfig } from "../types/widget";
 import { FieldDiscoveryService } from "./fieldDiscoveryService";
+import {
+  flattenObject,
+  getNestedValue,
+  isFinancialTimeSeries,
+  normalizeFinancialTimeSeries,
+} from "../utils/dataTransform";
 
 /**
  * Polling state management
@@ -30,6 +36,8 @@ export class ApiService {
   private static readonly DEFAULT_HEADERS = {
     "Content-Type": "application/json",
   };
+  private static lastRequestTime: Map<string, number> = new Map();
+  private static readonly MIN_REQUEST_INTERVAL = 1000; // 1 second minimum between requests
 
   /**
    * Builds authentication headers from configuration
@@ -124,7 +132,6 @@ export class ApiService {
         fields: discovery.paths,
         statusCode: response.status,
         responseTime: Math.round(responseTime),
-        isArray: Array.isArray(data),
       };
 
       return result;
@@ -159,6 +166,21 @@ export class ApiService {
     widgetId: string,
     config: WidgetConfig
   ): Promise<{ success: boolean; data?: WidgetData; error?: string }> {
+    // Rate limiting check
+    const lastRequest = this.lastRequestTime.get(widgetId);
+    const now = Date.now();
+    if (lastRequest && now - lastRequest < this.MIN_REQUEST_INTERVAL) {
+      const waitTime = this.MIN_REQUEST_INTERVAL - (now - lastRequest);
+      return {
+        success: false,
+        error: `Rate limit: Please wait ${Math.ceil(
+          waitTime / 1000
+        )}s before next request`,
+      };
+    }
+
+    this.lastRequestTime.set(widgetId, now);
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(
@@ -191,12 +213,28 @@ export class ApiService {
 
       const rawData = await response.json();
 
+      let dataToProcess = rawData;
+
+      // Check if this is financial time-series data
+      const financialDataPath = (
+        config as WidgetConfig & { financialDataPath?: string }
+      ).financialDataPath;
+      if (financialDataPath) {
+        const financialData = getNestedValue(rawData, financialDataPath);
+        if (isFinancialTimeSeries(financialData)) {
+          // Normalize financial time series to array format
+          dataToProcess = normalizeFinancialTimeSeries(
+            financialData as Record<string, Record<string, unknown>>
+          );
+        }
+      }
+
       // Transform raw data into WidgetData format
       const widgetData: WidgetData = {
-        records: Array.isArray(rawData)
-          ? rawData.map((item) => this.flattenObject(item))
-          : [this.flattenObject(rawData)],
-        totalCount: Array.isArray(rawData) ? rawData.length : 1,
+        records: Array.isArray(dataToProcess)
+          ? dataToProcess.map((item) => flattenObject(item))
+          : [flattenObject(dataToProcess)],
+        totalCount: Array.isArray(dataToProcess) ? dataToProcess.length : 1,
         fetchedAt: Date.now(),
         metadata: {
           source: config.apiEndpoint,
@@ -230,40 +268,6 @@ export class ApiService {
   }
 
   /**
-   * Flattens nested objects into dot-notation records
-   */
-  private static flattenObject(
-    obj: unknown,
-    prefix = ""
-  ): Record<string, string | number | boolean | null> {
-    const result: Record<string, string | number | boolean | null> = {};
-
-    if (!obj || typeof obj !== "object") {
-      return result;
-    }
-
-    for (const [key, value] of Object.entries(obj)) {
-      const newKey = prefix ? `${prefix}.${key}` : key;
-
-      if (value === null) {
-        result[newKey] = null;
-      } else if (Array.isArray(value)) {
-        result[newKey] = JSON.stringify(value);
-      } else if (typeof value === "object") {
-        Object.assign(result, this.flattenObject(value, newKey));
-      } else if (
-        typeof value === "string" ||
-        typeof value === "number" ||
-        typeof value === "boolean"
-      ) {
-        result[newKey] = value;
-      }
-    }
-
-    return result;
-  }
-
-  /**
    * Starts background polling for a widget
    */
   static startPolling(
@@ -272,8 +276,10 @@ export class ApiService {
     onUpdate: (data: WidgetData) => void,
     onError: (error: string) => void
   ): void {
-    // Stop existing polling if any
-    this.stopPolling(widgetId);
+    // Skip if already polling
+    if (this.isPolling(widgetId)) {
+      return;
+    }
 
     // Fetch immediately
     this.fetchWidgetData(widgetId, config).then((result) => {

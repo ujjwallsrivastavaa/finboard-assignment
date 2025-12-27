@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import {
   Table as TableUI,
   TableBody,
@@ -14,6 +14,7 @@ import { useDashboardStore } from "@/lib/store/useDashboardStore";
 import type { Widget } from "@/lib/types/widget";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatValue } from "@/lib/utils/formatters";
 
 interface TableWidgetProps {
   widget: Widget;
@@ -22,14 +23,7 @@ interface TableWidgetProps {
 export default function TableWidget({ widget }: TableWidgetProps) {
   const { setWidgetData, updateWidgetStatus } = useDashboardStore();
 
-  useEffect(() => {
-    // Only fetch if we don't have data yet
-    if (!widget.data && widget.status === "idle") {
-      fetchData();
-    }
-  }, [widget.id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     updateWidgetStatus(widget.id, "loading");
 
     const result = await ApiService.fetchWidgetData(widget.id, widget.config);
@@ -40,7 +34,17 @@ export default function TableWidget({ widget }: TableWidgetProps) {
     } else {
       updateWidgetStatus(widget.id, "error", result.error);
     }
-  };
+  }, [widget.id, widget.config, setWidgetData, updateWidgetStatus]);
+
+  useEffect(() => {
+    // Only fetch if we don't have data yet AND not using polling
+    // If refreshInterval is set, the dashboard will handle polling
+    const isPolling =
+      widget.config.refreshInterval && widget.config.refreshInterval > 0;
+    if (!widget.data && widget.status === "idle" && !isPolling) {
+      fetchData();
+    }
+  }, [widget.data, widget.status, widget.config.refreshInterval, fetchData]);
 
   const handleRefresh = () => {
     fetchData();
@@ -119,9 +123,7 @@ export default function TableWidget({ widget }: TableWidgetProps) {
                       key={`${index}-${field.path}`}
                       className="text-slate-200 text-sm py-3"
                     >
-                      {value !== null && value !== undefined
-                        ? String(value)
-                        : "N/A"}
+                      {formatValue(value, field.format)}
                     </TableCell>
                   );
                 })}

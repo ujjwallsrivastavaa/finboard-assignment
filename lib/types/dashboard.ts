@@ -63,7 +63,10 @@ export interface DashboardActions {
   /** Export widget configuration */
   exportWidget: (id: string) => string;
 
-  /** Import widget from JSON */
+  /** Export all widgets configuration */
+  exportAllWidgets: () => string;
+
+  /** Import widget(s) from JSON (handles single widget or array of widgets) */
   importWidget: (json: string) => void;
 }
 

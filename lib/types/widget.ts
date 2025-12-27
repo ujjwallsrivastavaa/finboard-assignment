@@ -48,7 +48,6 @@ export type {
   ChartType,
   ChartConfig,
   ChartDefinition,
-  CandlestickFieldMapping,
   chartDefinitions,
 } from "./chart";
 
@@ -98,6 +97,31 @@ export function isCardTableConfig(
   fields: SelectedField[];
 } {
   return config.type === "card" || config.type === "table";
+}
+
+/**
+ * Intermediate widget config type used between steps 2 and 3
+ * This is the partial config before fields are finalized
+ */
+export interface WidgetConfigForFormatting {
+  /** Widget type being created */
+  type: "card" | "table" | "chart";
+  /** Widget title */
+  title: string;
+  /** API endpoint URL */
+  apiEndpoint: string;
+  /** Optional refresh interval in milliseconds */
+  refreshInterval?: number;
+  /** Authentication configuration */
+  authentication?: ApiAuthentication;
+  /** Whether this is financial data (OHLC format) */
+  isFinancialData?: boolean;
+  /** Path to the data array in the API response */
+  dataPath?: string;
+  /** Display mode (card, table, or chart) */
+  displayMode: "card" | "table" | "chart";
+  /** Chart configuration (only for chart type) */
+  chartConfig?: ChartConfig;
 }
 
 /**

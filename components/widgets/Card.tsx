@@ -1,18 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import {
-  Card as CardUI,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useEffect, useCallback } from "react";
 import { ApiService } from "@/lib/services";
 import { useDashboardStore } from "@/lib/store/useDashboardStore";
 import type { Widget } from "@/lib/types/widget";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatValue } from "@/lib/utils/formatters";
 
 interface CardWidgetProps {
   widget: Widget;
@@ -21,14 +15,7 @@ interface CardWidgetProps {
 export default function CardWidget({ widget }: CardWidgetProps) {
   const { setWidgetData, updateWidgetStatus } = useDashboardStore();
 
-  useEffect(() => {
-    // Only fetch if we don't have data yet
-    if (!widget.data && widget.status === "idle") {
-      fetchData();
-    }
-  }, [widget.id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     updateWidgetStatus(widget.id, "loading");
 
     const result = await ApiService.fetchWidgetData(widget.id, widget.config);
@@ -39,7 +26,17 @@ export default function CardWidget({ widget }: CardWidgetProps) {
     } else {
       updateWidgetStatus(widget.id, "error", result.error);
     }
-  };
+  }, [widget.id, widget.config, setWidgetData, updateWidgetStatus]);
+
+  useEffect(() => {
+    // Only fetch if we don't have data yet AND not using polling
+    // If refreshInterval is set, the dashboard will handle polling
+    const isPolling =
+      widget.config.refreshInterval && widget.config.refreshInterval > 0;
+    if (!widget.data && widget.status === "idle" && !isPolling) {
+      fetchData();
+    }
+  }, [widget.data, widget.status, widget.config.refreshInterval, fetchData]);
 
   const handleRefresh = () => {
     fetchData();
@@ -102,7 +99,7 @@ export default function CardWidget({ widget }: CardWidgetProps) {
                 {field.name}:
               </span>
               <span className="text-sm text-slate-100 font-semibold text-right">
-                {value !== null && value !== undefined ? String(value) : "N/A"}
+                {formatValue(value, field.format)}
               </span>
             </div>
           );

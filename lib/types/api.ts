@@ -70,7 +70,7 @@ export interface ApiTestConfig {
   headers?: Record<string, string>;
 
   /** Request body for POST/PUT/PATCH */
-  body?: any;
+  body?: Record<string, unknown>;
 
   /** Timeout in milliseconds */
   timeout?: number;
@@ -81,12 +81,10 @@ export interface ApiTestConfig {
 export interface ApiTestSuccess {
   success: true;
   message: string;
-  data: any;
+  data: unknown;
   fields: string[];
   statusCode: number;
   responseTime: number;
-  /** Whether the response data is an array */
-  isArray: boolean;
 }
 
 /**
