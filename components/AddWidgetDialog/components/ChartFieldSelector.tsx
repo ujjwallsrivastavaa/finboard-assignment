@@ -46,6 +46,7 @@ interface ChartFieldSelectorProps {
   apiFields: FieldNode[];
   dataPath: string | null;
   isFinancialData?: boolean;
+  initialChartConfig?: ChartConfig;
   onProceedToFormatting: (
     fields: SelectedField[],
     config: WidgetConfigForFormatting
@@ -58,14 +59,51 @@ export default function ChartFieldSelector({
   apiFields,
   dataPath,
   isFinancialData = false,
+  initialChartConfig,
   onProceedToFormatting,
   onCancel,
 }: ChartFieldSelectorProps) {
   const toast = useCustomToast();
-  const [selectedChartType, setSelectedChartType] = useState<ChartType>("line");
+  const [selectedChartType, setSelectedChartType] = useState<ChartType>(
+    initialChartConfig?.type || "line"
+  );
+
+  // Initialize field selections from chart config when in edit mode
+  const getInitialFieldSelections = (): Record<
+    string,
+    { path: string; name: string; type: PrimitiveType } | null
+  > => {
+    if (!initialChartConfig) return {};
+
+    const selections: Record<
+      string,
+      { path: string; name: string; type: PrimitiveType } | null
+    > = {};
+
+    // Extract field selections from the chart config
+    Object.entries(initialChartConfig).forEach(([key, value]) => {
+      if (
+        key !== "type" &&
+        value &&
+        typeof value === "object" &&
+        "path" in value &&
+        "type" in value &&
+        "name" in value
+      ) {
+        selections[key] = {
+          path: (value as { path: string }).path,
+          name: (value as { name: string }).name,
+          type: (value as { type: PrimitiveType }).type,
+        };
+      }
+    });
+
+    return selections;
+  };
+
   const [fieldSelections, setFieldSelections] = useState<
     Record<string, { path: string; name: string; type: PrimitiveType } | null>
-  >({});
+  >(getInitialFieldSelections());
 
   const chartDefinition = getChartDefinition(selectedChartType);
 

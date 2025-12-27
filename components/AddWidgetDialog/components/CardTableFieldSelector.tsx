@@ -28,6 +28,7 @@ interface CardTableFieldSelectorProps {
   displayMode: "card" | "table";
   dataPath: string | null;
   isFinancialData?: boolean;
+  initialSelectedFields?: SelectedField[];
   onProceedToFormatting: (
     fields: SelectedField[],
     config: WidgetConfigForFormatting
@@ -41,10 +42,13 @@ export const CardTableFieldSelector = ({
   displayMode,
   dataPath,
   isFinancialData = false,
+  initialSelectedFields,
   onProceedToFormatting,
   onCancel,
 }: CardTableFieldSelectorProps) => {
-  const [selectedFields, setSelectedFields] = useState<SelectedField[]>([]);
+  const [selectedFields, setSelectedFields] = useState<SelectedField[]>(
+    initialSelectedFields || []
+  );
   const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
 
   const toggleFieldExpansion = (path: string): void => {

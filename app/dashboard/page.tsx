@@ -236,6 +236,15 @@ export default function DashboardPage() {
               <div className="flex cursor-move items-center justify-between border-b border-slate-700/50 bg-slate-900/50 px-4 py-3">
                 <h3 className="font-semibold text-white">{widget.title}</h3>
                 <div className="flex gap-2">
+                  <AddWidgetDialog
+                    title="Edit Widget"
+                    editWidget={widget}
+                    triggerButton={
+                      <button className="rounded px-3 py-1 text-sm text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
+                        Edit
+                      </button>
+                    }
+                  />
                   <button
                     onClick={() => handleExportWidget(widget.id)}
                     className="rounded px-3 py-1 text-sm text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 transition-colors"

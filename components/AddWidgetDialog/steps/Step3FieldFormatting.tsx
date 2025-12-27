@@ -26,6 +26,7 @@ import { getDefaultLayout } from "@/lib/constants/widgetDefaults";
 interface Step3FieldFormattingProps {
   selectedFields: SelectedField[];
   widgetConfig: WidgetConfigForFormatting;
+  editWidgetId?: string;
   onFieldFormatChange: (
     fieldPath: string,
     format: FieldFormat | undefined
@@ -37,11 +38,12 @@ interface Step3FieldFormattingProps {
 export default function Step3FieldFormatting({
   selectedFields,
   widgetConfig,
+  editWidgetId,
   onFieldFormatChange,
   onBack,
   onSuccess,
 }: Step3FieldFormattingProps) {
-  const { addWidget } = useDashboardStore();
+  const { addWidget, updateWidget } = useDashboardStore();
   const toast = useCustomToast();
 
   const handleFieldNameChange = (fieldPath: string, newName: string) => {
@@ -166,10 +168,19 @@ export default function Step3FieldFormatting({
       };
     }
 
-    addWidget(widgetInput);
-    toast.success("Widget Added", {
-      description: `${widgetConfig.title} has been added to your dashboard.`,
-    });
+    if (editWidgetId) {
+      // Update existing widget
+      updateWidget(editWidgetId, widgetInput);
+      toast.success("Widget Updated", {
+        description: `${widgetConfig.title} has been updated successfully.`,
+      });
+    } else {
+      // Add new widget
+      addWidget(widgetInput);
+      toast.success("Widget Added", {
+        description: `${widgetConfig.title} has been added to your dashboard.`,
+      });
+    }
     onSuccess();
   };
 

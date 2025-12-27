@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCustomToast } from "@/lib/hooks/useToast";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
+import type { Widget } from "@/lib/types/widget";
 import { Button } from "../ui/button";
 import type { FieldNode, SelectedField, FieldFormat } from "@/lib/types/field";
 import type { ApiTestResult, ApiAuthentication } from "@/lib/types/api";
@@ -83,7 +84,17 @@ const formSchema = z
 
 type FormSchema = z.infer<typeof formSchema>;
 
-const AddWidgetDialog = ({ title }: { title: string }) => {
+interface AddWidgetDialogProps {
+  title: string;
+  editWidget?: Widget;
+  triggerButton?: React.ReactNode;
+}
+
+const AddWidgetDialog = ({
+  title,
+  editWidget,
+  triggerButton,
+}: AddWidgetDialogProps) => {
   const [open, setOpen] = useState<boolean>(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isTestingApi, setIsTestingApi] = useState<boolean>(false);
@@ -92,25 +103,124 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
     typeof FieldDiscoveryService.analyzeDataStructure
   > | null>(null);
   const [rawApiData, setRawApiData] = useState<unknown>(null);
-  const [selectedFields, setSelectedFields] = useState<SelectedField[]>([]);
+
+  // Get initial chart config if editing a chart widget
+  const getInitialChartConfig = () => {
+    if (!editWidget || editWidget.config.type !== "chart") return undefined;
+    if ("chartConfig" in editWidget.config) {
+      return editWidget.config.chartConfig;
+    }
+    return undefined;
+  };
+
+  // Initialize with existing fields if editing
+  const getInitialFields = (): SelectedField[] => {
+    if (!editWidget || editWidget.config.type === "chart") return [];
+    if ("fields" in editWidget.config) {
+      return editWidget.config.fields || [];
+    }
+    return [];
+  };
+
+  const [selectedFields, setSelectedFields] = useState<SelectedField[]>(
+    getInitialFields()
+  );
+
+  // Initialize widget config if editing
+  const getInitialConfig = (): WidgetConfigForFormatting | null => {
+    if (!editWidget) return null;
+    return {
+      type: editWidget.type,
+      title: editWidget.title,
+      apiEndpoint: editWidget.config.apiEndpoint,
+      refreshInterval: editWidget.config.refreshInterval,
+      authentication: editWidget.config.authentication,
+      displayMode: editWidget.type,
+      ...(editWidget.config.type === "chart" &&
+      "chartConfig" in editWidget.config
+        ? { chartConfig: editWidget.config.chartConfig }
+        : {}),
+    };
+  };
+
   const [widgetConfig, setWidgetConfig] =
-    useState<WidgetConfigForFormatting | null>(null);
+    useState<WidgetConfigForFormatting | null>(getInitialConfig());
 
   const toast = useCustomToast();
 
+  const getAuthDefaults = () => {
+    if (!editWidget?.config.authentication) {
+      return {
+        requiresAuth: false,
+        authType: "none" as const,
+        authToken: "",
+        authHeaderName: "X-API-Key",
+        authUsername: "",
+        authPassword: "",
+      };
+    }
+
+    const auth = editWidget.config.authentication;
+    switch (auth.type) {
+      case "bearer":
+        return {
+          requiresAuth: true,
+          authType: "bearer" as const,
+          authToken: auth.token,
+          authHeaderName: "X-API-Key",
+          authUsername: "",
+          authPassword: "",
+        };
+      case "api-key":
+        return {
+          requiresAuth: true,
+          authType: "api-key" as const,
+          authToken: auth.apiKey,
+          authHeaderName: auth.headerName,
+          authUsername: "",
+          authPassword: "",
+        };
+      case "basic":
+        return {
+          requiresAuth: true,
+          authType: "basic" as const,
+          authToken: "",
+          authHeaderName: "X-API-Key",
+          authUsername: auth.username,
+          authPassword: auth.password,
+        };
+      default:
+        return {
+          requiresAuth: false,
+          authType: "none" as const,
+          authToken: "",
+          authHeaderName: "X-API-Key",
+          authUsername: "",
+          authPassword: "",
+        };
+    }
+  };
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      widgetTitle: "",
-      apiEndpoint: "",
-      refreshInterval: 30000,
-      requiresAuth: false,
-      authType: "none",
-      authToken: "",
-      authHeaderName: "X-API-Key",
-      authUsername: "",
-      authPassword: "",
-    },
+    defaultValues: editWidget
+      ? {
+          widgetTitle: editWidget.title,
+          apiEndpoint: editWidget.config.apiEndpoint,
+          refreshInterval: editWidget.config.refreshInterval || 30000,
+          ...getAuthDefaults(),
+        }
+      : {
+          widgetTitle: "",
+          apiEndpoint: "",
+          refreshInterval: 30000,
+          requiresAuth: false,
+          authType: "none",
+          authToken: "",
+          authHeaderName: "X-API-Key",
+          authUsername: "",
+          authPassword: "",
+        },
   });
 
   const testApi = async (): Promise<void> => {
@@ -188,13 +298,36 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
 
   const resetDialog = () => {
     setOpen(false);
-    form.reset();
     setStep(1);
     setApiFields([]);
     setDataStructure(null);
     setRawApiData(null);
-    setSelectedFields([]);
-    setWidgetConfig(null);
+
+    // Reset to initial state based on whether we're editing or adding
+    if (editWidget) {
+      setSelectedFields(getInitialFields());
+      setWidgetConfig(getInitialConfig());
+      form.reset({
+        widgetTitle: editWidget.title,
+        apiEndpoint: editWidget.config.apiEndpoint,
+        refreshInterval: editWidget.config.refreshInterval || 30000,
+        ...getAuthDefaults(),
+      });
+    } else {
+      setSelectedFields([]);
+      setWidgetConfig(null);
+      form.reset({
+        widgetTitle: "",
+        apiEndpoint: "",
+        refreshInterval: 30000,
+        requiresAuth: false,
+        authType: "none",
+        authToken: "",
+        authHeaderName: "X-API-Key",
+        authUsername: "",
+        authPassword: "",
+      });
+    }
   };
 
   const handleFieldFormatChange = (
@@ -220,16 +353,22 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
   return (
     <Dialog
       open={open}
-      onOpenChange={() => {
-        setOpen(!open);
-        form.reset();
+      onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          // Dialog is closing - reset everything properly
+          resetDialog();
+        } else {
+          setOpen(true);
+        }
       }}
     >
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
-          <Plus className="mr-2" />
-          {title}
-        </Button>
+        {triggerButton || (
+          <Button className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+            <Plus className="mr-2" />
+            {title}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent
         className={`
@@ -256,6 +395,8 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
                 apiFields={apiFields}
                 dataStructure={dataStructure}
                 rawApiData={rawApiData}
+                initialSelectedFields={selectedFields}
+                initialChartConfig={getInitialChartConfig()}
                 onBack={() => setStep(1)}
                 onProceedToFormatting={proceedToFormatting}
                 onSuccess={resetDialog}
@@ -266,6 +407,7 @@ const AddWidgetDialog = ({ title }: { title: string }) => {
               <Step3FieldFormatting
                 selectedFields={selectedFields}
                 widgetConfig={widgetConfig}
+                editWidgetId={editWidget?.id}
                 onFieldFormatChange={handleFieldFormatChange}
                 onBack={() => setStep(2)}
                 onSuccess={resetDialog}

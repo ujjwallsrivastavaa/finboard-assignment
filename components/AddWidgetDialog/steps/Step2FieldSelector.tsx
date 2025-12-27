@@ -21,6 +21,7 @@ import { getNestedValue } from "@/lib/utils/dataTransform";
 import type { SelectedField } from "@/lib/types/field";
 import type { WidgetConfigForFormatting } from "@/lib/types/widget";
 import { CardTableFieldSelector } from "../components/CardTableFieldSelector";
+import type { ChartConfig } from "@/lib/types/chart";
 
 interface Step2FieldSelectorProps {
   form: UseFormReturn<{
@@ -39,6 +40,8 @@ interface Step2FieldSelectorProps {
     typeof FieldDiscoveryService.analyzeDataStructure
   > | null;
   rawApiData: unknown;
+  initialSelectedFields?: SelectedField[];
+  initialChartConfig?: ChartConfig;
   onBack: () => void;
   onProceedToFormatting: (
     fields: SelectedField[],
@@ -52,14 +55,29 @@ export const Step2FieldSelector = ({
   apiFields,
   dataStructure,
   rawApiData,
+  initialSelectedFields,
+  initialChartConfig,
   onBack,
   onProceedToFormatting,
   onSuccess,
 }: Step2FieldSelectorProps) => {
-  // Determine initial display mode based on allowed modes
-  const initialMode = dataStructure?.allowedModes?.[0] || "card";
+  // Determine initial display mode based on widget being edited or allowed modes
+  const getInitialDisplayMode = (): "card" | "table" | "chart" => {
+    // If editing a chart widget, start with chart mode
+    if (initialChartConfig) {
+      return "chart";
+    }
+    // If editing card/table with fields, determine from field count
+    if (initialSelectedFields && initialSelectedFields.length > 0) {
+      // If multiple fields, likely a table; single field likely a card
+      return initialSelectedFields.length > 1 ? "table" : "card";
+    }
+    // Default to first allowed mode
+    return dataStructure?.allowedModes?.[0] || "card";
+  };
+
   const [displayMode, setDisplayMode] = useState<"card" | "table" | "chart">(
-    initialMode
+    getInitialDisplayMode()
   );
 
   // Get available data source options (arrays + financial time series)
@@ -327,6 +345,7 @@ export const Step2FieldSelector = ({
               apiFields={displayFields}
               dataPath={selectedDataPath}
               isFinancialData={isFinancialDataPath}
+              initialChartConfig={initialChartConfig}
               onProceedToFormatting={onProceedToFormatting}
               onCancel={onSuccess}
             />
@@ -337,6 +356,7 @@ export const Step2FieldSelector = ({
               displayMode={displayMode}
               dataPath={selectedDataPath}
               isFinancialData={isFinancialDataPath}
+              initialSelectedFields={initialSelectedFields}
               onProceedToFormatting={onProceedToFormatting}
               onCancel={onSuccess}
             />
