@@ -1,10 +1,11 @@
 /**
  * Dashboard Store with localStorage Persistence
  * Industrial-grade state management with type safety
+ * Features encrypted storage using AES-256-GCM
  */
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import type {
   Widget,
   WidgetInput,
@@ -14,6 +15,11 @@ import type {
 } from "@/lib/types/widget";
 import type { DashboardStore, DashboardState } from "@/lib/types/dashboard";
 import type { Layout, LayoutItem } from "react-grid-layout";
+import {
+  encryptData,
+  decryptData,
+  isEncryptionConfigured,
+} from "@/lib/utils/encryption";
 
 /**
  * Initial state for the dashboard
@@ -21,6 +27,64 @@ import type { Layout, LayoutItem } from "react-grid-layout";
 const initialState: DashboardState = {
   widgets: [],
   selectedWidgetId: null,
+};
+
+/**
+ * Encrypted Storage Adapter for localStorage
+ * Encrypts data before saving and decrypts on retrieval
+ * If decryption fails (tampered data or key change), clears storage
+ */
+const encryptedStorage: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    // Check if we're in a browser environment
+    if (typeof window === "undefined" || typeof localStorage === "undefined") {
+      return null;
+    }
+
+    try {
+      const encryptedValue = localStorage.getItem(name);
+      if (!encryptedValue) return null;
+
+      if (!isEncryptionConfigured()) {
+        console.error("Encryption key not configured. Clearing storage.");
+        localStorage.removeItem(name);
+        return null;
+      }
+
+      // Decrypt the stored value
+      const decryptedValue = await decryptData(encryptedValue);
+      return decryptedValue;
+    } catch (error) {
+      console.error("Failed to decrypt stored data. Clearing storage.", error);
+      localStorage.removeItem(name);
+      return null;
+    }
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    // Check if we're in a browser environment
+    if (typeof window === "undefined" || typeof localStorage === "undefined") {
+      return;
+    }
+
+    try {
+      if (!isEncryptionConfigured()) {
+        throw new Error("Encryption key not configured");
+      }
+
+      // Encrypt before storing
+      const encryptedValue = await encryptData(value);
+      localStorage.setItem(name, encryptedValue);
+    } catch (error) {
+      console.error("Failed to encrypt data:", error);
+      throw error;
+    }
+  },
+  removeItem: (name: string): void => {
+    if (typeof window === "undefined" || typeof localStorage === "undefined") {
+      return;
+    }
+    localStorage.removeItem(name);
+  },
 };
 
 /**
@@ -199,7 +263,9 @@ export const useDashboardStore = create<DashboardStore>()(
 
               // If no existing data, just set the new data
               if (!widget.data || !widget.data.records.length) {
-                console.log(`[Store] No existing data, setting new data directly`);
+                console.log(
+                  `[Store] No existing data, setting new data directly`
+                );
                 return {
                   ...widget,
                   data: newData,
@@ -220,7 +286,9 @@ export const useDashboardStore = create<DashboardStore>()(
               };
 
               console.log(`[Store] Merged data:`, mergedData);
-              console.log(`[Store] Old record count: ${widget.data.records.length}, New record count: ${newData.records.length}, Total: ${mergedData.records.length}`);
+              console.log(
+                `[Store] Old record count: ${widget.data.records.length}, New record count: ${newData.records.length}, Total: ${mergedData.records.length}`
+              );
 
               return {
                 ...widget,
@@ -289,40 +357,79 @@ export const useDashboardStore = create<DashboardStore>()(
         }));
       },
 
-      exportWidget: (id: string): string => {
+      exportWidget: async (id: string): Promise<string> => {
         const widget = get().widgets.find((w) => w.id === id);
         if (!widget) {
           throw new Error(`Widget with id ${id} not found`);
         }
 
+        // Strip sensitive data (records) from export
         const exportData = {
           ...widget,
+          data: widget.data
+            ? {
+                ...widget.data,
+                records: [], // Clear records for security
+              }
+            : undefined,
           exportedAt: Date.now(),
           version: "1.0.0",
         };
 
-        return JSON.stringify(exportData, null, 2);
+        const jsonString = JSON.stringify(exportData, null, 2);
+
+        // Encrypt the export file
+        const encrypted = await encryptData(jsonString);
+        return encrypted;
       },
 
-      exportAllWidgets: (): string => {
+      exportAllWidgets: async (): Promise<string> => {
         const widgets = get().widgets;
         if (widgets.length === 0) {
           throw new Error("No widgets to export");
         }
 
+        // Strip sensitive data (records) from all widgets
+        const sanitizedWidgets = widgets.map((widget) => ({
+          ...widget,
+          data: widget.data
+            ? {
+                ...widget.data,
+                records: [], // Clear records for security
+              }
+            : undefined,
+        }));
+
         const exportData = {
-          widgets: widgets,
+          widgets: sanitizedWidgets,
           exportedAt: Date.now(),
           version: "1.0.0",
           count: widgets.length,
         };
 
-        return JSON.stringify(exportData, null, 2);
+        const jsonString = JSON.stringify(exportData, null, 2);
+
+        // Encrypt the export file
+        const encrypted = await encryptData(jsonString);
+        return encrypted;
       },
 
-      importWidget: (json: string): void => {
+      importWidget: async (json: string): Promise<void> => {
         try {
-          const parsed = JSON.parse(json);
+          // Try to decrypt if it's encrypted data (hex format with ":")
+          let decryptedJson = json;
+          if (json.includes(":") && /^[0-9a-f]+:[0-9a-f]+$/i.test(json)) {
+            try {
+              decryptedJson = await decryptData(json);
+            } catch (decryptError) {
+              console.warn(
+                "Failed to decrypt, trying as plain JSON",
+                decryptError
+              );
+            }
+          }
+
+          const parsed = JSON.parse(decryptedJson);
 
           // Check if it's an array of widgets or a single widget
           const isMultipleWidgets =
@@ -357,7 +464,7 @@ export const useDashboardStore = create<DashboardStore>()(
     }),
     {
       name: "dashboard-storage", // Storage key in localStorage
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => encryptedStorage),
       version: 1, // Version for potential migrations
 
       // Optional: Partition state for selective persistence

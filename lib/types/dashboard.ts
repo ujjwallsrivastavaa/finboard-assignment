@@ -63,14 +63,14 @@ export interface DashboardActions {
   /** Duplicate an existing widget */
   duplicateWidget: (id: string) => void;
 
-  /** Export widget configuration */
-  exportWidget: (id: string) => string;
+  /** Export widget configuration (encrypted) */
+  exportWidget: (id: string) => Promise<string>;
 
-  /** Export all widgets configuration */
-  exportAllWidgets: () => string;
+  /** Export all widgets configuration (encrypted) */
+  exportAllWidgets: () => Promise<string>;
 
-  /** Import widget(s) from JSON (handles single widget or array of widgets) */
-  importWidget: (json: string) => void;
+  /** Import widget(s) from JSON (handles encrypted or plain JSON, single widget or array of widgets) */
+  importWidget: (json: string) => Promise<void>;
 }
 
 /**

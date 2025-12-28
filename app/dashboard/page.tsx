@@ -127,20 +127,20 @@ export default function DashboardPage() {
     updateAllWidgetLayouts(currentLayouts);
   };
 
-  const handleExportWidget = (widgetId: string) => {
+  const handleExportWidget = async (widgetId: string) => {
     try {
-      const jsonData = exportWidget(widgetId);
-      const blob = new Blob([jsonData], { type: "application/json" });
+      const jsonData = await exportWidget(widgetId);
+      const blob = new Blob([jsonData], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       // Generate timestamp in the callback to avoid impure function call during render
-      link.download = `widget-${widgetId}-${new Date().getTime()}.json`;
+      link.download = `widget-${widgetId}-${new Date().getTime()}.enc`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success("Widget exported successfully");
+      toast.success("Widget exported successfully (encrypted)");
     } catch (error) {
       toast.error(
         `Failed to export widget: ${
@@ -153,18 +153,25 @@ export default function DashboardPage() {
   const handleImportWidget = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "application/json";
+    input.accept = "*/*";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
       try {
         const text = await file.text();
-        const parsed = JSON.parse(text);
-        const isMultiple = parsed.widgets && Array.isArray(parsed.widgets);
-        const count = isMultiple ? parsed.widgets.length : 1;
 
-        importWidget(text);
+        // Try to parse to get count (only works for decrypted/plain JSON)
+        let count = 1;
+        try {
+          const parsed = JSON.parse(text);
+          const isMultiple = parsed.widgets && Array.isArray(parsed.widgets);
+          count = isMultiple ? parsed.widgets.length : 1;
+        } catch {
+          // Encrypted data won't parse, will be handled in importWidget
+        }
+
+        await importWidget(text);
         toast.success(
           `Successfully imported ${count} widget${count > 1 ? "s" : ""}`
         );
@@ -179,19 +186,21 @@ export default function DashboardPage() {
     input.click();
   };
 
-  const handleExportAllWidgets = () => {
+  const handleExportAllWidgets = async () => {
     try {
-      const jsonData = exportAllWidgets();
-      const blob = new Blob([jsonData], { type: "application/json" });
+      const jsonData = await exportAllWidgets();
+      const blob = new Blob([jsonData], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `all-widgets-${Date.now()}.json`;
+      link.download = `all-widgets-${Date.now()}.enc`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success(`Exported ${widgets.length} widgets successfully`);
+      toast.success(
+        `Exported ${widgets.length} widgets successfully (encrypted)`
+      );
     } catch (error) {
       toast.error(
         `Failed to export widgets: ${
@@ -206,7 +215,9 @@ export default function DashboardPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Manage your financial widgets</p>
+          <p className="text-muted-foreground mt-1">
+            Manage your financial widgets
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <SimpleThemeToggle />
@@ -244,7 +255,9 @@ export default function DashboardPage() {
               className="rounded-lg border border-border bg-card shadow-xl backdrop-blur-sm hover:border-border/80 transition-colors overflow-hidden flex flex-col"
             >
               <div className="flex cursor-move items-center justify-between border-b border-border bg-muted/50 px-4 py-3">
-                <h3 className="font-semibold text-foreground">{widget.title}</h3>
+                <h3 className="font-semibold text-foreground">
+                  {widget.title}
+                </h3>
                 <div className="flex gap-2">
                   <AddWidgetDialog
                     title="Edit Widget"
