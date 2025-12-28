@@ -10,6 +10,7 @@ import TableWidget from "@/components/widgets/Table";
 import { CandleStickCharts, LineChart } from "@/components/widgets/charts";
 import { ApiService } from "@/lib/services";
 import { toast } from "sonner";
+import { SimpleThemeToggle } from "@/components/ThemeToggle";
 
 export default function DashboardPage() {
   const [containerWidth, setContainerWidth] = useState(1200); // Default fallback
@@ -192,24 +193,24 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
-      \n{" "}
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 p-4 md:p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 mt-1">Manage your financial widgets</p>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Manage your financial widgets</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          <SimpleThemeToggle />
           <button
             onClick={handleExportAllWidgets}
             disabled={widgets.length === 0}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-emerald-300 bg-emerald-900/30 hover:bg-emerald-800/40 border border-emerald-600/50 hover:border-emerald-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/40 border border-emerald-300 dark:border-emerald-600/50 hover:border-emerald-400 dark:hover:border-emerald-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Export All
           </button>
           <button
             onClick={handleImportWidget}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-slate-500/50 transition-colors"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-accent border border-border hover:border-border/80 transition-colors"
           >
             Import Widget
           </button>
@@ -231,29 +232,29 @@ export default function DashboardPage() {
           {widgets.map((widget) => (
             <div
               key={widget.id}
-              className="rounded-lg border border-slate-700/50 bg-slate-800/30 shadow-xl backdrop-blur-sm hover:border-slate-600/50 transition-colors overflow-hidden flex flex-col"
+              className="rounded-lg border border-border bg-card shadow-xl backdrop-blur-sm hover:border-border/80 transition-colors overflow-hidden flex flex-col"
             >
-              <div className="flex cursor-move items-center justify-between border-b border-slate-700/50 bg-slate-900/50 px-4 py-3">
-                <h3 className="font-semibold text-white">{widget.title}</h3>
+              <div className="flex cursor-move items-center justify-between border-b border-border bg-muted/50 px-4 py-3">
+                <h3 className="font-semibold text-foreground">{widget.title}</h3>
                 <div className="flex gap-2">
                   <AddWidgetDialog
                     title="Edit Widget"
                     editWidget={widget}
                     triggerButton={
-                      <button className="rounded px-3 py-1 text-sm text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
+                      <button className="rounded px-3 py-1 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/40 transition-colors">
                         Edit
                       </button>
                     }
                   />
                   <button
                     onClick={() => handleExportWidget(widget.id)}
-                    className="rounded px-3 py-1 text-sm text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 transition-colors"
+                    className="rounded px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/10 border border-blue-300 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/40 transition-colors"
                   >
                     Export
                   </button>
                   <button
                     onClick={() => removeWidget(widget.id)}
-                    className="rounded px-3 py-1 text-sm text-red-400 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-colors"
+                    className="rounded px-3 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 border border-red-300 dark:border-red-500/20 hover:border-red-400 dark:hover:border-red-500/40 transition-colors"
                   >
                     Remove
                   </button>
@@ -278,9 +279,9 @@ export default function DashboardPage() {
         </Responsive>
       </div>
       {widgets.length === 0 && (
-        <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-slate-700/50 bg-slate-800/20">
+        <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/20">
           <div className="text-center">
-            <p className="mb-4 text-slate-400 text-lg">No widgets yet</p>
+            <p className="mb-4 text-muted-foreground text-lg">No widgets yet</p>
             <AddWidgetDialog title="Add your first widget" />
           </div>
         </div>

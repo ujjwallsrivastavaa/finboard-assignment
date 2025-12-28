@@ -28,7 +28,7 @@ export const AvailableFieldsTree = ({
       return (
         <div key={field.path}>
           <label
-            className={`flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors ${
+            className={`flex items-center gap-3 p-3 rounded-lg bg-card/50 hover:bg-accent/50 transition-colors ${
               isSelectable ? "cursor-pointer" : ""
             }`}
             style={{ marginLeft: `${level * 1.5}rem` }}
@@ -40,12 +40,12 @@ export const AvailableFieldsTree = ({
                   e.preventDefault();
                   toggleFieldExpansion(field.path);
                 }}
-                className="p-0 hover:bg-slate-600/50 rounded transition-colors"
+                className="p-0 hover:bg-accent/50 rounded transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 )}
               </button>
             )}
@@ -70,10 +70,10 @@ export const AvailableFieldsTree = ({
               />
             )}
             <div className="flex-1 flex items-center justify-between gap-3">
-              <code className="text-sm text-slate-300 break-all">
+              <code className="text-sm text-foreground break-all">
                 {field.name}
               </code>
-              <span className="text-xs text-slate-500 font-mono">
+              <span className="text-xs text-muted-foreground font-mono">
                 {field.type}
               </span>
             </div>

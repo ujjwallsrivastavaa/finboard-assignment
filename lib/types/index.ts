@@ -52,3 +52,12 @@ export type {
   DashboardActions,
   DashboardStore,
 } from "./dashboard";
+
+// Theme types
+export type {
+  Theme,
+  ResolvedTheme,
+  ThemeState,
+  ThemeActions,
+  ThemeStore,
+} from "./theme";

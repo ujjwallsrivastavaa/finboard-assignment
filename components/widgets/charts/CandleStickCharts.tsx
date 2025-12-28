@@ -188,7 +188,7 @@ export default function CandleStickCharts({ widget }: CandleStickChartsProps) {
 
   if (!widget.data || widget.data.records.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[200px] text-slate-400">
+      <div className="flex items-center justify-center h-full min-h-[200px] text-muted-foreground">
         No data available
       </div>
     );

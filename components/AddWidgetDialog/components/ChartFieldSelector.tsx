@@ -219,7 +219,7 @@ export default function ChartFieldSelector({
     <div className="flex flex-col gap-6">
       {/* Chart Type Selector */}
       <div className="space-y-3">
-        <Label className="text-slate-300 font-medium text-sm">Chart Type</Label>
+        <Label className="text-foreground font-medium text-sm">Chart Type</Label>
         <Select
           value={selectedChartType}
           onValueChange={(value) => {
@@ -227,11 +227,11 @@ export default function ChartFieldSelector({
             setFieldSelections({});
           }}
         >
-          <SelectTrigger className="!h-14 bg-slate-800/50 border-slate-700 text-slate-200 px-4">
+          <SelectTrigger className="!h-14 bg-background border-border text-foreground px-4">
             <SelectValue />
           </SelectTrigger>
 
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent className="bg-popover border-border">
             <div className="max-h-60 overflow-y-auto">
               {(Object.keys(chartDefinitions) as ChartType[]).map((type) => {
                 const def = chartDefinitions[type];
@@ -239,11 +239,11 @@ export default function ChartFieldSelector({
                   <SelectItem
                     key={type}
                     value={type}
-                    className="text-slate-200 focus:bg-slate-700 focus:text-white"
+                    className="text-foreground focus:bg-accent focus:text-accent-foreground"
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{def.displayName}</span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-muted-foreground">
                         {def.description}
                       </span>
                     </div>
@@ -255,15 +255,15 @@ export default function ChartFieldSelector({
         </Select>
       </div>
 
-      <Separator className="bg-slate-700/50" />
+      <Separator className="bg-border" />
 
       {/* Dynamic Field Selectors */}
       <ScrollArea className="h-[400px] w-full">
         <div className="space-y-4 pr-4">
-          <h3 className="text-slate-300 font-medium text-sm">
+          <h3 className="text-foreground font-medium text-sm">
             Configure Fields
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Map your API fields to the chart configuration
           </p>
 
@@ -279,22 +279,22 @@ export default function ChartFieldSelector({
                 return (
                   <Card
                     key={fieldKey}
-                    className="p-4 bg-slate-800/30 border-slate-700/50"
+                    className="p-4 bg-card/50 border-border"
                   >
                     <div className="space-y-3">
                       <div>
-                        <Label className="text-slate-200 font-medium">
+                        <Label className="text-foreground font-medium">
                           {fieldMeta.label}
                           {!fieldMeta.required && (
-                            <span className="text-xs text-slate-400 ml-2">
+                            <span className="text-xs text-muted-foreground ml-2">
                               (Optional)
                             </span>
                           )}
                         </Label>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {fieldMeta.description}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-muted-foreground/70 mt-1">
                           Allowed types: {fieldMeta.allowedTypes.join(", ")}
                         </p>
                       </div>
@@ -313,13 +313,13 @@ export default function ChartFieldSelector({
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-slate-900/50 border-slate-600 text-slate-200">
+                        <SelectTrigger className="bg-background border-border text-foreground">
                           <SelectValue placeholder="Select a field..." />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectContent className="bg-popover border-border">
                           <div className="max-h-60 overflow-y-auto">
                             {availableFields.length === 0 ? (
-                              <div className="p-2 text-sm text-slate-400">
+                              <div className="p-2 text-sm text-muted-foreground">
                                 No compatible fields found
                               </div>
                             ) : (
@@ -327,11 +327,11 @@ export default function ChartFieldSelector({
                                 <SelectItem
                                   key={field.path}
                                   value={field.path}
-                                  className="text-slate-200 focus:bg-slate-700 focus:text-white"
+                                  className="text-foreground focus:bg-accent focus:text-accent-foreground"
                                 >
                                   <div className="flex items-center justify-between gap-2">
                                     <span>{field.name}</span>
-                                    <span className="text-xs text-slate-400">
+                                    <span className="text-xs text-muted-foreground">
                                       ({field.type})
                                     </span>
                                   </div>
@@ -350,7 +350,7 @@ export default function ChartFieldSelector({
         </div>
       </ScrollArea>
 
-      <Separator className="bg-slate-700/50" />
+      <Separator className="bg-border" />
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-2 pt-2">
@@ -358,7 +358,7 @@ export default function ChartFieldSelector({
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="border-slate-600 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-colors"
+          className="border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           Cancel
         </Button>
@@ -366,7 +366,7 @@ export default function ChartFieldSelector({
           type="button"
           onClick={handleProceedToFormatting}
           disabled={!canSubmit}
-          className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+          className="bg-gradient-to-r from-emerald-500 to-blue-600 dark:from-emerald-400 dark:to-blue-500 hover:from-emerald-600 hover:to-blue-700 dark:hover:from-emerald-500 dark:hover:to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
         >
           Next: Configure Formatting
         </Button>

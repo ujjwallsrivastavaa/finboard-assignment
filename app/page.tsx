@@ -1,45 +1,49 @@
 import Link from "next/link";
 import { ArrowRight, TrendingUp, Zap, Shield, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SimpleThemeToggle } from "@/components/ThemeToggle";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 text-foreground overflow-hidden">
       {/* Navigation */}
-      <nav className="flex justify-between items-center px-6 md:px-12 py-6 border-b border-slate-800/50">
-        <div className="text-2xl font-bold">FinBoard</div>
-        <div className="hidden md:flex gap-8 text-sm text-slate-300">
-          <a href="#how-it-works" className="hover:text-white transition">
-            How it Works
-          </a>
-          <a href="#features" className="hover:text-white transition">
-            Features
-          </a>
+      <nav className="flex justify-between items-center px-6 md:px-12 py-6 border-b border-border backdrop-blur-sm bg-background/80 sticky top-0 z-50">
+        <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 dark:from-emerald-400 dark:to-blue-400 bg-clip-text text-transparent">FinBoard</div>
+        <div className="flex items-center gap-6">
+          <div className="hidden md:flex gap-8 text-sm text-muted-foreground">
+            <a href="#how-it-works" className="hover:text-foreground transition">
+              How it Works
+            </a>
+            <a href="#features" className="hover:text-foreground transition">
+              Features
+            </a>
+          </div>
+          <SimpleThemeToggle />
         </div>
       </nav>
 
       {/* Hero Section */}
       <section className="relative min-h-[85vh] flex items-center justify-center px-6 md:px-12 py-20">
         {/* Grid background effect */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 dark:opacity-10" />
 
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-700 bg-slate-900/50">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-sm text-slate-300">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/50 backdrop-blur-sm">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-sm text-muted-foreground">
               Real-time Financial Intelligence
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-balance">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-balance text-foreground">
             Build Your Custom
-            <span className="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-emerald-600 to-blue-600 dark:from-emerald-400 dark:to-blue-400 bg-clip-text text-transparent">
               {" "}
               Finance Dashboard
             </span>
           </h1>
 
-          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto text-balance">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
             Connect to multiple financial APIs, visualize real-time market data
             with customizable widgets, and manage your investment portfolio all
             in one powerful dashboard.
@@ -59,19 +63,19 @@ export default function HomePage() {
           </div>
 
           {/* Trust indicators */}
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-slate-400">
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-400" />
+              <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Enterprise Security</span>
             </div>
-            <div className="hidden sm:block w-px h-4 bg-slate-700" />
+            <div className="hidden sm:block w-px h-4 bg-border" />
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-blue-400" />
+              <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>Real-time Updates</span>
             </div>
-            <div className="hidden sm:block w-px h-4 bg-slate-700" />
+            <div className="hidden sm:block w-px h-4 bg-border" />
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Multiple APIs</span>
             </div>
           </div>
@@ -81,10 +85,10 @@ export default function HomePage() {
       {/* How it Works Section */}
       <section
         id="how-it-works"
-        className="py-20 px-6 md:px-12 border-t border-slate-800/50"
+        className="py-20 px-6 md:px-12 border-t border-border"
       >
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-foreground">
             How it Works
           </h2>
 
@@ -110,11 +114,11 @@ export default function HomePage() {
               },
             ].map((item, idx) => (
               <div key={idx} className="relative">
-                <div className="text-6xl font-bold text-emerald-500/20 mb-4">
+                <div className="text-6xl font-bold text-emerald-500/20 dark:text-emerald-400/20 mb-4">
                   {item.step}
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                <p className="text-slate-400 leading-relaxed">
+                <h3 className="text-xl font-semibold mb-3 text-foreground">{item.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">
                   {item.description}
                 </p>
                 {idx < 2 && (
@@ -124,14 +128,14 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mt-16 p-8 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+          <div className="mt-16 p-8 rounded-xl border border-emerald-500/20 dark:border-emerald-400/20 bg-emerald-500/5 dark:bg-emerald-400/5">
             <div className="flex items-start gap-4">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2" />
+              <div className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 mt-2" />
               <div>
-                <h4 className="font-semibold mb-2 text-emerald-400">
+                <h4 className="font-semibold mb-2 text-emerald-700 dark:text-emerald-300">
                   Persistent Storage
                 </h4>
-                <p className="text-slate-400">
+                <p className="text-muted-foreground">
                   Your dashboard layout and configuration are automatically
                   saved to your browser&apos;s local storage. Refresh the page
                   and everything stays exactly as you left it.
@@ -145,10 +149,10 @@ export default function HomePage() {
       {/* Features Section */}
       <section
         id="features"
-        className="py-20 px-6 md:px-12 bg-slate-900/40 border-t border-slate-800/50"
+        className="py-20 px-6 md:px-12 bg-muted/30 border-t border-border"
       >
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-foreground">
             Powerful Features
           </h2>
 
@@ -175,11 +179,11 @@ export default function HomePage() {
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="p-6 rounded-lg border border-slate-700/50 bg-slate-800/30 hover:border-slate-600 transition-colors group"
+                className="p-6 rounded-lg border border-border bg-card hover:border-ring/50 hover:shadow-lg transition-all group"
               >
-                <feature.icon className="w-10 h-10 text-emerald-400 mb-4 group-hover:text-blue-400 transition-colors" />
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-slate-400">{feature.description}</p>
+                <feature.icon className="w-10 h-10 text-emerald-600 dark:text-emerald-400 mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -188,17 +192,17 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section className="py-20 px-6 md:px-12">
-        <div className="max-w-4xl mx-auto text-center space-y-6 p-12 rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/30 to-slate-900/30">
-          <h2 className="text-3xl md:text-4xl font-bold">
+        <div className="max-w-4xl mx-auto text-center space-y-6 p-12 rounded-xl border border-border bg-gradient-to-br from-card to-muted/50 shadow-xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
             Ready to Build Your Dashboard?
           </h2>
-          <p className="text-lg text-slate-400">
+          <p className="text-lg text-muted-foreground">
             Start monitoring your investments in real-time with FinBoard today.
           </p>
           <Link href="/dashboard">
             <Button
               size="lg"
-              className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold px-10 py-6 rounded-full"
+              className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold px-10 py-6 rounded-full shadow-lg hover:shadow-xl transition-all"
             >
               Launch Dashboard
               <ArrowRight className="ml-2 w-5 h-5" />
@@ -208,7 +212,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/50 py-8 px-6 md:px-12 text-center text-slate-500 text-sm">
+      <footer className="border-t border-border py-8 px-6 md:px-12 text-center text-muted-foreground text-sm bg-muted/20">
         <p>© 2025 FinBoard. All rights reserved.</p>
       </footer>
     </main>

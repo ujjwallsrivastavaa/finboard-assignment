@@ -78,7 +78,7 @@ export default function TableWidget({ widget }: TableWidgetProps) {
 
   if (!widget.data || widget.data.records.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[200px] text-slate-400">
+      <div className="flex items-center justify-center h-full min-h-[200px] text-muted-foreground">
         No data available
       </div>
     );
@@ -92,14 +92,14 @@ export default function TableWidget({ widget }: TableWidgetProps) {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="bg-slate-800 border-b border-slate-700/50">
+      <div className="bg-card/50 border-b border-border">
         <TableUI>
           <TableHeader>
-            <TableRow className="hover:bg-slate-800/60">
+            <TableRow className="hover:bg-accent/50">
               {fields.map((field) => (
                 <TableHead
                   key={field.path}
-                  className="text-emerald-400 font-semibold text-xs uppercase tracking-wide bg-slate-800 py-3"
+                  className="text-emerald-400 font-semibold text-xs uppercase tracking-wide bg-card/50 py-3"
                 >
                   {field.name}
                 </TableHead>
@@ -114,14 +114,14 @@ export default function TableWidget({ widget }: TableWidgetProps) {
             {widget.data.records.map((record, index) => (
               <TableRow
                 key={index}
-                className="hover:bg-slate-700/30 border-b border-slate-700/30"
+                className="hover:bg-accent/30 border-b border-border/30"
               >
                 {fields.map((field) => {
                   const value = record[field.path];
                   return (
                     <TableCell
                       key={`${index}-${field.path}`}
-                      className="text-slate-200 text-sm py-3"
+                      className="text-foreground text-sm py-3"
                     >
                       {formatValue(value, field.format)}
                     </TableCell>

@@ -204,20 +204,20 @@ export const Step2FieldSelector = ({
       className="flex flex-col max-h-[90vh]"
     >
       <div className="w-full min-w-full flex flex-col max-h-[90vh]">
-        <DialogHeader className="px-6 py-4 border-b border-slate-700/50 flex flex-row items-start justify-between gap-4 flex-shrink-0">
+        <DialogHeader className="px-6 py-4 border-b border-border flex flex-row items-start justify-between gap-4 flex-shrink-0">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <button
                 onClick={onBack}
-                className="p-1 hover:bg-slate-800 rounded transition-colors"
+                className="p-1 hover:bg-accent rounded transition-colors"
               >
-                <ChevronLeft className="w-5 h-5 text-slate-400" />
+                <ChevronLeft className="w-5 h-5 text-muted-foreground" />
               </button>
               <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
                 Configure Fields
               </DialogTitle>
             </div>
-            <DialogDescription className="text-slate-400 ml-9">
+            <DialogDescription className="text-muted-foreground ml-9">
               Select which fields to display and choose your display mode.
             </DialogDescription>
           </div>
@@ -228,7 +228,7 @@ export const Step2FieldSelector = ({
           {dataSourceOptions.length > 0 && !dataStructure?.isRootArray && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-slate-300 font-medium text-sm">
+                <Label className="text-foreground font-medium text-sm">
                   Data Source{" "}
                   {dataSourceOptions.length > 1 && (
                     <span className="text-emerald-400">*</span>
@@ -247,7 +247,7 @@ export const Step2FieldSelector = ({
                 }}
               >
                 <SelectTrigger
-                  className={`bg-slate-800/50 border-slate-700 text-slate-200 ${
+                  className={`bg-background border-border text-foreground ${
                     !selectedDataPath && dataSourceOptions.length > 1
                       ? "border-emerald-500/50 ring-1 ring-emerald-500/20"
                       : ""
@@ -261,12 +261,12 @@ export const Step2FieldSelector = ({
                     }
                   />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectContent className="bg-popover border-border">
                   {dataSourceOptions.map((option) => (
                     <SelectItem
                       key={option.path}
                       value={option.path}
-                      className="text-slate-200 focus:bg-slate-700 focus:text-white"
+                      className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
                     >
                       {option.path} (
                       {option.type === "array"
@@ -277,7 +277,7 @@ export const Step2FieldSelector = ({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 {selectedDataPath
                   ? `Using data from "${selectedDataPath}" for Table or Chart view`
                   : dataSourceOptions.length > 1
@@ -288,7 +288,7 @@ export const Step2FieldSelector = ({
           )}
 
           <div>
-            <label className="text-slate-300 mb-3 block font-medium text-sm">
+            <label className="text-foreground mb-3 block font-medium text-sm">
               Display Mode
             </label>
             <div className="flex gap-2">
@@ -306,10 +306,10 @@ export const Step2FieldSelector = ({
                     disabled={!isAllowed}
                     className={`flex-1 transition-all ${
                       displayMode === mode
-                        ? "bg-gradient-to-r from-emerald-500 to-blue-600 text-white"
+                        ? "bg-gradient-to-r from-emerald-500 to-blue-600 dark:from-emerald-400 dark:to-blue-500 text-white"
                         : !isAllowed
-                        ? "bg-slate-800/30 text-slate-600 cursor-not-allowed opacity-50"
-                        : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50"
+                        ? "bg-muted/50 text-muted-foreground/30 cursor-not-allowed opacity-50"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
                     }`}
                   >
                     {label}
@@ -317,7 +317,7 @@ export const Step2FieldSelector = ({
                 );
               })}
             </div>
-            <p className="text-xs text-slate-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               {dataStructure?.isRootArray
                 ? "Root data is an array - only Table and Chart modes available"
                 : dataStructure?.hasArrays ||
@@ -334,7 +334,7 @@ export const Step2FieldSelector = ({
               <p className="text-emerald-400 font-medium mb-2">
                 Data Source Selection Required
               </p>
-              <p className="text-slate-400 text-sm">
+              <p className="text-muted-foreground text-sm">
                 Multiple data sources detected. Please select one from the
                 dropdown above to continue configuring your widget.
               </p>

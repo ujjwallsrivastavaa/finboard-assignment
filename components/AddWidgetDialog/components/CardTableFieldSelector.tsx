@@ -144,11 +144,11 @@ export const CardTableFieldSelector = ({
     <div className="grid grid-cols-2 gap-6">
       {/* Available Fields - Left Side */}
       <div className="flex flex-col">
-        <label className="text-slate-300 mb-3 block font-medium text-sm">
+        <label className="text-foreground mb-3 block font-medium text-sm">
           Available Fields (
           {FieldDiscoveryService.countSelectableFields(apiFields)})
         </label>
-        <div className="space-y-2 max-h-[500px] overflow-y-auto border border-slate-700/50 rounded-lg p-4 bg-slate-800/20">
+        <div className="space-y-2 max-h-[500px] overflow-y-auto border border-border rounded-lg p-4 bg-card/20">
           <AvailableFieldsTree
             apiFields={apiFields}
             selectedFields={selectedFields}
@@ -157,14 +157,14 @@ export const CardTableFieldSelector = ({
             toggleFieldExpansion={toggleFieldExpansion}
           />
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           Select fields to add them to your widget
         </p>
       </div>
 
       {/* Selected Fields - Right Side */}
       <div className="flex flex-col">
-        <label className="text-slate-300 mb-3 block font-medium text-sm">
+        <label className="text-foreground mb-3 block font-medium text-sm">
           Selected Fields ({selectedFields.length})
         </label>
         <div className="space-y-2 max-h-[500px] overflow-y-auto border border-emerald-700/50 rounded-lg p-4 bg-emerald-900/10">
@@ -181,7 +181,7 @@ export const CardTableFieldSelector = ({
             className="space-y-2"
           >
             {selectedFields.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-slate-500 text-sm">
+              <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
                 No fields selected
               </div>
             ) : (
@@ -199,18 +199,18 @@ export const CardTableFieldSelector = ({
             )}
           </Reorder.Group>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           Drag to reorder or use arrows. Order determines display sequence.
         </p>
       </div>
 
       {/* Action Buttons */}
-      <div className="col-span-2 flex justify-between gap-2 pt-4 border-t border-slate-700/50">
+      <div className="col-span-2 flex justify-between gap-2 pt-4 border-t border-border">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="border-slate-600 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-colors"
+          className="border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           Cancel
         </Button>
@@ -219,7 +219,7 @@ export const CardTableFieldSelector = ({
             type="button"
             onClick={handleProceedToFormatting}
             disabled={selectedFields.length === 0}
-            className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 gap-2"
+            className="bg-gradient-to-r from-emerald-500 to-blue-600 dark:from-emerald-400 dark:to-blue-500 hover:from-emerald-600 hover:to-blue-700 dark:hover:from-emerald-500 dark:hover:to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 gap-2"
           >
             Next: Configure Formatting
             <ChevronRight className="w-4 h-4" />

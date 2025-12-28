@@ -65,10 +65,10 @@ export default function FieldFormatSelector({
   const currentType = format?.type || "none";
 
   return (
-    <div className="space-y-3 p-3 border border-slate-700/50 rounded-lg bg-slate-800/30">
+    <div className="space-y-3 p-3 border border-border rounded-lg bg-card/50">
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1">
-          <Label className="text-xs text-slate-400 mb-1 block">
+          <Label className="text-xs text-muted-foreground mb-1 block">
             Display Name
           </Label>
           <Input
@@ -76,7 +76,7 @@ export default function FieldFormatSelector({
             value={fieldName}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="Field name"
-            className="bg-slate-900/50 border-slate-700 text-sm h-8"
+            className="bg-background border-border text-sm h-8"
           />
         </div>
         <Button
@@ -91,14 +91,14 @@ export default function FieldFormatSelector({
         </Button>
       </div>
 
-      <div className="text-xs text-slate-500 -mt-1">
-        Path: <code className="text-slate-400">{field.path}</code>
+      <div className="text-xs text-muted-foreground -mt-1">
+        Path: <code className="text-foreground/70">{field.path}</code>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs text-slate-400">Format Type</Label>
+        <Label className="text-xs text-muted-foreground">Format Type</Label>
         <Select value={currentType} onValueChange={handleFormatTypeChange}>
-          <SelectTrigger className="bg-slate-900/50 border-slate-700">
+          <SelectTrigger className="bg-background border-border">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -118,14 +118,14 @@ export default function FieldFormatSelector({
       {/* Currency-specific options */}
       {currentType === "currency" && format && (
         <div className="space-y-2">
-          <Label className="text-xs text-slate-400">Currency</Label>
+          <Label className="text-xs text-muted-foreground">Currency</Label>
           <Select
             value={format.currency || "USD"}
             onValueChange={(value) =>
               handleFormatUpdate({ currency: value as CurrencyCode })
             }
           >
-            <SelectTrigger className="bg-slate-900/50 border-slate-700">
+            <SelectTrigger className="bg-background border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -151,7 +151,7 @@ export default function FieldFormatSelector({
         currentType === "compact-number") &&
         format && (
           <div className="space-y-2">
-            <Label className="text-xs text-slate-400">Decimal Places</Label>
+            <Label className="text-xs text-muted-foreground">Decimal Places</Label>
             <Input
               type="number"
               min="0"
@@ -160,7 +160,7 @@ export default function FieldFormatSelector({
               onChange={(e) =>
                 handleFormatUpdate({ decimals: parseInt(e.target.value) || 0 })
               }
-              className="bg-slate-900/50 border-slate-700"
+              className="bg-background border-border"
             />
           </div>
         )}
@@ -169,23 +169,23 @@ export default function FieldFormatSelector({
       {format && currentType !== "none" && (
         <>
           <div className="space-y-2">
-            <Label className="text-xs text-slate-400">Prefix (Optional)</Label>
+            <Label className="text-xs text-muted-foreground">Prefix (Optional)</Label>
             <Input
               type="text"
               placeholder="e.g., $, #"
               value={format.prefix || ""}
               onChange={(e) => handleFormatUpdate({ prefix: e.target.value })}
-              className="bg-slate-900/50 border-slate-700"
+              className="bg-background border-border"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-slate-400">Suffix (Optional)</Label>
+            <Label className="text-xs text-muted-foreground">Suffix (Optional)</Label>
             <Input
               type="text"
               placeholder="e.g., USD, pts"
               value={format.suffix || ""}
               onChange={(e) => handleFormatUpdate({ suffix: e.target.value })}
-              className="bg-slate-900/50 border-slate-700"
+              className="bg-background border-border"
             />
           </div>
         </>
@@ -199,11 +199,11 @@ export default function FieldFormatSelector({
             id={`showSign-${field.path}`}
             checked={format.showSign || false}
             onChange={(e) => handleFormatUpdate({ showSign: e.target.checked })}
-            className="rounded border-slate-700"
+            className="rounded border-border"
           />
           <Label
             htmlFor={`showSign-${field.path}`}
-            className="text-xs text-slate-400 cursor-pointer"
+            className="text-xs text-muted-foreground cursor-pointer"
           >
             Show + sign for positive numbers
           </Label>

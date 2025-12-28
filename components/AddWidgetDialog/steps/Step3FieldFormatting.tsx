@@ -61,7 +61,7 @@ export default function Step3FieldFormatting({
 
   if (selectedFields.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <p className="text-sm">No fields selected yet</p>
         <p className="text-xs mt-2">Go back and select fields first</p>
       </div>
@@ -206,9 +206,9 @@ export default function Step3FieldFormatting({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="rounded-lg p-2 hover:bg-slate-800 transition-colors"
+            className="rounded-lg p-2 hover:bg-accent transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-slate-400" />
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </button>
           <div>
             <DialogTitle className="text-2xl">
@@ -226,7 +226,7 @@ export default function Step3FieldFormatting({
           <h3 className="text-sm font-semibold text-white">
             Field Display Configuration
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Customize display names and formatting for each field. Change how
             data is shown - format numbers as currency, percentages, dates, and
             more.
@@ -246,8 +246,8 @@ export default function Step3FieldFormatting({
           </div>
         </ScrollArea>
 
-        <div className="pt-4 border-t border-slate-700/50">
-          <p className="text-xs text-slate-500 mb-4">
+        <div className="pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground mb-4">
             💡 Tip: Click &quot;Auto&quot; to automatically detect and suggest
             the best format based on field names. You can also customize the
             display name for each field.
@@ -259,14 +259,14 @@ export default function Step3FieldFormatting({
               type="button"
               variant="outline"
               onClick={handleSkipFormatting}
-              className="border-slate-600 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-colors"
+              className="border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               Skip Formatting
             </Button>
             <Button
               type="button"
               onClick={handleAddWidget}
-              className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-gradient-to-r from-emerald-500 to-blue-600 dark:from-emerald-400 dark:to-blue-500 hover:from-emerald-600 hover:to-blue-700 dark:hover:from-emerald-500 dark:hover:to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Add Widget
             </Button>

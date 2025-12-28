@@ -364,7 +364,7 @@ const AddWidgetDialog = ({
     >
       <DialogTrigger asChild>
         {triggerButton || (
-          <Button className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+          <Button className="bg-gradient-to-r from-emerald-600 to-blue-600 dark:from-emerald-500 dark:to-blue-500 hover:from-emerald-700 hover:to-blue-700 dark:hover:from-emerald-600 dark:hover:to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
             <Plus className="mr-2" />
             {title}
           </Button>
@@ -372,7 +372,7 @@ const AddWidgetDialog = ({
       </DialogTrigger>
       <DialogContent
         className={`
-          !max-w-none bg-slate-900 border-slate-700/50 text-white p-0
+          !max-w-none bg-card border-border text-foreground p-0
           ${step === 2 ? "!w-[95vw]" : step === 3 ? "!w-[800px]" : "!w-[600px]"}
           max-h-[90vh] overflow-hidden
         `}

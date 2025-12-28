@@ -54,11 +54,11 @@ export const Step1Config = ({
       className="flex flex-col max-h-[90vh]"
     >
       <div className="w-full min-w-full flex flex-col max-h-[90vh]">
-        <DialogHeader className="px-6 py-4 border-b border-slate-700/50 flex-shrink-0">
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
+        <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 dark:from-emerald-400 dark:to-blue-400 bg-clip-text text-transparent">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Configure your widget and test the API connection.
           </DialogDescription>
         </DialogHeader>
@@ -73,12 +73,12 @@ export const Step1Config = ({
               name="widgetTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-slate-300">Widget Title</FormLabel>
+                  <FormLabel className="text-foreground">Widget Title</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., Bitcoin Price Tracker"
                       {...field}
-                      className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                     />
                   </FormControl>
                   <FormMessage />
@@ -91,12 +91,12 @@ export const Step1Config = ({
               name="apiEndpoint"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-slate-300">API Endpoint</FormLabel>
+                  <FormLabel className="text-foreground">API Endpoint</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., https://api.coinbase.com/v2/exchange-rates?currency=BTC"
                       {...field}
-                      className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                     />
                   </FormControl>
                   <FormMessage />
@@ -109,7 +109,7 @@ export const Step1Config = ({
               name="refreshInterval"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-slate-300">
+                  <FormLabel className="text-foreground">
                     Refresh Interval (ms)
                   </FormLabel>
                   <FormControl>
@@ -121,7 +121,7 @@ export const Step1Config = ({
                       step={1000}
                       value={field.value ?? ""}
                       onChange={(e) => field.onChange(Number(e.target.value))}
-                      className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                     />
                   </FormControl>
                   <FormMessage />
@@ -130,7 +130,7 @@ export const Step1Config = ({
             />
 
             {/* Authentication Section */}
-            <div className="space-y-4 pt-2 border-t border-slate-700/50">
+            <div className="space-y-4 pt-2 border-t border-border">
               <FormField
                 control={form.control}
                 name="requiresAuth"
@@ -153,7 +153,7 @@ export const Step1Config = ({
                       </FormControl>
                       <label
                         htmlFor="requiresAuth"
-                        className="text-slate-300 text-sm font-medium cursor-pointer"
+                        className="text-foreground text-sm font-medium cursor-pointer"
                       >
                         Requires Authentication
                       </label>
@@ -170,7 +170,7 @@ export const Step1Config = ({
                     name="authType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-slate-300 text-sm font-medium">
+                        <FormLabel className="text-foreground text-sm font-medium">
                           Authentication Type
                         </FormLabel>
                         <FormControl>
@@ -195,8 +195,8 @@ export const Step1Config = ({
                                 onClick={() => field.onChange(value)}
                                 className={`px-3 py-2 rounded text-sm transition-all ${
                                   field.value === value
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                                    ? "bg-emerald-600 dark:bg-emerald-500 text-white"
+                                    : "bg-muted text-muted-foreground hover:bg-accent"
                                 }`}
                               >
                                 {label}
@@ -215,7 +215,7 @@ export const Step1Config = ({
                       name="authToken"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-300 text-sm font-medium">
+                          <FormLabel className="text-foreground text-sm font-medium">
                             Bearer Token
                           </FormLabel>
                           <FormControl>
@@ -223,7 +223,7 @@ export const Step1Config = ({
                               type="password"
                               placeholder="Enter your bearer token"
                               {...field}
-                              className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                              className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-emerald-500"
                             />
                           </FormControl>
                           <FormMessage />
@@ -239,14 +239,14 @@ export const Step1Config = ({
                         name="authHeaderName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-300 text-sm font-medium">
+                            <FormLabel className="text-foreground text-sm font-medium">
                               Header Name
                             </FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="e.g., X-API-Key"
                                 {...field}
-                                className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                                className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-emerald-500"
                               />
                             </FormControl>
                             <FormMessage />
@@ -258,7 +258,7 @@ export const Step1Config = ({
                         name="authToken"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-300 text-sm font-medium">
+                            <FormLabel className="text-foreground text-sm font-medium">
                               API Key
                             </FormLabel>
                             <FormControl>
@@ -266,7 +266,7 @@ export const Step1Config = ({
                                 type="password"
                                 placeholder="Enter your API key"
                                 {...field}
-                                className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                                className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-emerald-500"
                               />
                             </FormControl>
                             <FormMessage />
@@ -283,14 +283,14 @@ export const Step1Config = ({
                         name="authUsername"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-300 text-sm font-medium">
+                            <FormLabel className="text-foreground text-sm font-medium">
                               Username
                             </FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="Enter username"
                                 {...field}
-                                className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                                className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                               />
                             </FormControl>
                             <FormMessage />
@@ -302,7 +302,7 @@ export const Step1Config = ({
                         name="authPassword"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-300 text-sm font-medium">
+                            <FormLabel className="text-foreground text-sm font-medium">
                               Password
                             </FormLabel>
                             <FormControl>
@@ -310,7 +310,7 @@ export const Step1Config = ({
                                 type="password"
                                 placeholder="Enter password"
                                 {...field}
-                                className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-emerald-500"
+                                className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                               />
                             </FormControl>
                             <FormMessage />
@@ -325,12 +325,12 @@ export const Step1Config = ({
           </form>
         </Form>
 
-        <DialogFooter className="gap-2 px-6 py-4 border-t border-slate-700/50 flex-shrink-0">
+        <DialogFooter className="gap-2 px-6 py-4 border-t border-border flex-shrink-0">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
-            className="border-slate-600 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-colors"
+            className="border-border bg-background text-foreground hover:bg-muted hover:text-foreground hover:border-ring transition-colors"
           >
             Cancel
           </Button>
@@ -338,7 +338,7 @@ export const Step1Config = ({
             type="button"
             onClick={onSubmit}
             disabled={isTestingApi}
-            className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+            className="bg-gradient-to-r from-emerald-600 to-blue-600 dark:from-emerald-500 dark:to-blue-500 hover:from-emerald-700 hover:to-blue-700 dark:hover:from-emerald-600 dark:hover:to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
           >
             {isTestingApi ? "Testing..." : "Test API"}
           </Button>
