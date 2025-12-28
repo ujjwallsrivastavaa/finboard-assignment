@@ -11,7 +11,7 @@
 ![Zustand](https://img.shields.io/badge/Zustand-5.0-orange?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
-[Demo](#) • [Documentation](#-usage) • [Features](#-features) • [API Setup](#-api-integration-examples)
+[Demo](https://finboard-ujjwal.vercel.app) • [Documentation](#-usage) • [Features](#-features) • [API Setup](#-api-integration-examples)
 
 </div>
 
@@ -25,10 +25,7 @@
 - [Usage Guide](#-usage)
 - [Architecture](#️-architecture)
 - [Security](#-security)
-- [Performance](#-performance)
 - [Development](#-development)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
 - [License](#-license)
 
 ## Overview
@@ -152,19 +149,21 @@ Get started instantly:
 
 ## 📸 Demo & Screenshots
 
-### Dashboard Overview
+### 🎥 Demo Video
 
-_A fully customizable financial dashboard with real-time widgets_
+[![FinBoard Demo](https://img.youtube.com/vi/gtgW4DlmrHI/maxresdefault.jpg)](https://youtu.be/gtgW4DlmrHI)
 
-### Widget Creation Wizard
+### Screenshots
 
-_3-step process to connect and configure any financial API_
+![Dashboard Screenshot](screenshots/img1.jpg)
 
-### Template Gallery
+![Dashboard Screenshot](screenshots/img2.jpg)
 
-_Pre-built templates for instant dashboard setup_
+![Dashboard Screenshot](screenshots/img3.jpg)
 
-> **Note**: Add screenshots of your application here to showcase the UI
+![Dashboard Screenshot](screenshots/img4.jpg)
+
+![Dashboard Screenshot](screenshots/img5.jpg)
 
 ---
 
