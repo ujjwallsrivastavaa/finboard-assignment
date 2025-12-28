@@ -41,7 +41,7 @@ export const FieldItem = ({
         }}
       />
       <div className="flex-1 flex items-center justify-between gap-3">
-        <code className="text-sm text-emerald-300 break-all">{field.name}</code>
+        <code className="text-sm text-emerald-600 break-all">{field.name}</code>
         <span className="text-xs text-muted-foreground font-mono">{field.type}</span>
       </div>
       <div className="flex items-center gap-1">

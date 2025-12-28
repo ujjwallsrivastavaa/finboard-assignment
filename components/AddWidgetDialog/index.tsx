@@ -235,6 +235,8 @@ const AddWidgetDialog = ({
 
     try {
       const values = form.getValues();
+      
+      // Always fetch fresh data from the API to ensure latest data is used
       let authentication: ApiAuthentication = { type: "none" };
 
       if (values.requiresAuth) {
@@ -406,6 +408,7 @@ const AddWidgetDialog = ({
                 rawApiData={rawApiData}
                 initialSelectedFields={selectedFields}
                 initialChartConfig={getInitialChartConfig()}
+                initialWidgetType={editWidget?.type}
                 onBack={() => setStep(1)}
                 onProceedToFormatting={proceedToFormatting}
                 onSuccess={resetDialog}

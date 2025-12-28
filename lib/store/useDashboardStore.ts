@@ -13,7 +13,7 @@ import type {
   WidgetData,
   WidgetStatus,
 } from "@/lib/types/widget";
-import type { DashboardStore, DashboardState } from "@/lib/types/dashboard";
+import type { DashboardStore, DashboardState, DashboardTemplate } from "@/lib/types/dashboard";
 import type { Layout, LayoutItem } from "react-grid-layout";
 import {
   encryptData,
@@ -186,6 +186,10 @@ export const useDashboardStore = create<DashboardStore>()(
                   layout: updates.layout
                     ? { ...updates.layout, i: id }
                     : widget.layout,
+                  // Clear data and reset status when config changes to force refetch
+                  data: updates.config ? undefined : widget.data,
+                  status: updates.config ? "idle" : widget.status,
+                  error: updates.config ? undefined : widget.error,
                   lastUpdated: Date.now(),
                 }
               : widget
@@ -460,6 +464,57 @@ export const useDashboardStore = create<DashboardStore>()(
           console.error("Failed to import widget(s):", error);
           throw new Error("Invalid widget JSON format");
         }
+      },
+
+      /**
+       * Apply a dashboard template
+       * 
+       * This action replaces the current dashboard state with a pre-configured template.
+       * It follows these steps:
+       * 1. Clear all existing widgets from the dashboard
+       * 2. Iterate through template.widgets array
+       * 3. For each WidgetInput in the template:
+       *    - Generate a unique ID using generateWidgetId()
+       *    - Add timestamps (createdAt, lastUpdated)
+       *    - Set layout.i to the generated ID
+       *    - Convert WidgetInput to Widget
+       * 4. Set the new widgets array in state
+       * 5. Clear selectedWidgetId
+       * 
+       * After applying:
+       * - All widgets will have status: 'idle' (as defined in template)
+       * - Widgets will begin polling based on their refreshInterval
+       * - Users can edit, delete, or rearrange widgets as normal
+       * - Changes persist via existing localStorage mechanism
+       * 
+       * @param template - DashboardTemplate containing pre-configured widgets
+       */
+      applyTemplate: (template: DashboardTemplate): void => {
+        const now = Date.now();
+
+        // Convert template WidgetInput objects to full Widget objects
+        // Each widget needs: id, layout.i, createdAt, lastUpdated
+        const templateWidgets: Widget[] = template.widgets.map((widgetInput) => {
+          const id = generateWidgetId(widgetInput.title);
+          
+          return {
+            ...widgetInput,
+            id,
+            layout: {
+              ...widgetInput.layout,
+              i: id, // Auto-generate 'i' field from id
+            },
+            createdAt: now,
+            lastUpdated: now,
+          };
+        });
+
+        // Replace entire dashboard state with template widgets
+        // This clears existing widgets and loads template state
+        set({
+          widgets: templateWidgets,
+          selectedWidgetId: null,
+        });
       },
     }),
     {

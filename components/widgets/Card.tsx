@@ -88,7 +88,7 @@ export default function CardWidget({ widget }: CardWidgetProps) {
       : [];
 
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="overflow-auto p-4">
       <div className="space-y-3">
         {fields.map((field) => {
           const value = record[field.path];

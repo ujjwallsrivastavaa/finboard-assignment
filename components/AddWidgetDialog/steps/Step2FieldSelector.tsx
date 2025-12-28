@@ -43,6 +43,7 @@ interface Step2FieldSelectorProps {
   rawApiData: unknown;
   initialSelectedFields?: SelectedField[];
   initialChartConfig?: ChartConfig;
+  initialWidgetType?: "card" | "table" | "chart";
   onBack: () => void;
   onProceedToFormatting: (
     fields: SelectedField[],
@@ -58,12 +59,17 @@ export const Step2FieldSelector = ({
   rawApiData,
   initialSelectedFields,
   initialChartConfig,
+  initialWidgetType,
   onBack,
   onProceedToFormatting,
   onSuccess,
 }: Step2FieldSelectorProps) => {
   // Determine initial display mode based on widget being edited or allowed modes
   const getInitialDisplayMode = (): "card" | "table" | "chart" => {
+    // If we have an explicit initial widget type (when editing), use that
+    if (initialWidgetType) {
+      return initialWidgetType;
+    }
     // If editing a chart widget, start with chart mode
     if (initialChartConfig) {
       return "chart";
@@ -180,11 +186,16 @@ export const Step2FieldSelector = ({
     return apiFields;
   }, [selectedDataPath, apiFields, rawApiData, dataSourceOptions]);
 
-  const allowedModes = dataStructure?.allowedModes || [
-    "card",
-    "table",
-    "chart",
-  ];
+  // When editing a widget, restrict to only the widget's type
+  // This prevents changing a card to a table or vice versa
+  const allowedModes = useMemo(() => {
+    if (initialWidgetType) {
+      // If editing an existing widget, only allow its current type
+      return [initialWidgetType];
+    }
+    // For new widgets, use data structure constraints
+    return dataStructure?.allowedModes || ["card", "table", "chart"];
+  }, [initialWidgetType, dataStructure?.allowedModes]);
 
   // Determine if selected data path is financial
   const isFinancialDataPath = useMemo(() => {
@@ -319,7 +330,9 @@ export const Step2FieldSelector = ({
               })}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {dataStructure?.isRootArray
+              {initialWidgetType
+                ? `Editing ${initialWidgetType} widget - type cannot be changed`
+                : dataStructure?.isRootArray
                 ? "Root data is an array - only Table and Chart modes available"
                 : dataStructure?.hasArrays ||
                   dataStructure?.hasFinancialTimeSeries

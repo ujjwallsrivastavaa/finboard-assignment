@@ -5,6 +5,7 @@ import { Responsive, Layout } from "react-grid-layout";
 import { useDashboardStore } from "@/lib/store/useDashboardStore";
 import { GRID_CONFIG } from "@/lib/constants/widgetDefaults";
 import AddWidgetDialog from "@/components/AddWidgetDialog";
+import TemplateGallery from "@/components/TemplateGallery";
 import CardWidget from "@/components/widgets/Card";
 import TableWidget from "@/components/widgets/Table";
 import { CandleStickCharts, LineChart } from "@/components/widgets/charts";
@@ -55,16 +56,30 @@ export default function DashboardPage() {
   // Track which widgets are already connected to avoid duplicates
   const connectedWidgetsRef = useRef<Set<string>>(new Set());
   const widgetIdsRef = useRef<string[]>([]);
+  const widgetConfigRef = useRef<Map<string, any>>(new Map());
 
   // Start data updates for all widgets on mount and when new widgets are added
   useEffect(() => {
     const currentWidgetIds = widgets.map((w) => w.id);
     const connectedSet = connectedWidgetsRef.current;
     const previousWidgetIds = widgetIdsRef.current;
+    const configMap = widgetConfigRef.current;
 
     const newWidgets = widgets.filter(
       (widget) => !previousWidgetIds.includes(widget.id)
     );
+
+    // Check for widgets with changed configs (edited widgets)
+    const editedWidgets = widgets.filter((widget) => {
+      const previousConfig = configMap.get(widget.id);
+      const currentConfigStr = JSON.stringify(widget.config);
+      const hasConfigChanged = previousConfig !== currentConfigStr;
+      
+      // Update the config map
+      configMap.set(widget.id, currentConfigStr);
+      
+      return previousWidgetIds.includes(widget.id) && hasConfigChanged;
+    });
 
     // Update the ref
     widgetIdsRef.current = currentWidgetIds;
@@ -77,6 +92,45 @@ export default function DashboardPage() {
       }
 
       // Start data updates if socket URL is provided OR refresh interval is set
+      if (
+        widget.config.socketUrl ||
+        (widget.config.refreshInterval && widget.config.refreshInterval > 0)
+      ) {
+        connectedSet.add(widget.id);
+
+        ApiService.startDataUpdates(
+          widget.id,
+          widget.config,
+          (data, isIncremental = false) => {
+            if (isIncremental) {
+              appendWidgetData(widget.id, data);
+            } else {
+              setWidgetData(widget.id, data);
+            }
+            updateWidgetStatus(widget.id, "success");
+          },
+          (error) => {
+            updateWidgetStatus(widget.id, "error", error);
+            // Only show toast for non-rate-limit errors
+            if (!error.toLowerCase().includes("rate limit")) {
+              toast.error(
+                `Widget "${widget.title}" failed to fetch data: ${error}`
+              );
+            }
+          }
+        );
+      }
+    });
+
+    // Restart data updates for edited widgets
+    editedWidgets.forEach((widget) => {
+      // Stop existing connection
+      if (connectedSet.has(widget.id)) {
+        ApiService.stopDataUpdates(widget.id);
+        connectedSet.delete(widget.id);
+      }
+
+      // Start new connection with updated config
       if (
         widget.config.socketUrl ||
         (widget.config.refreshInterval && widget.config.refreshInterval > 0)
@@ -221,6 +275,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <SimpleThemeToggle />
+          <TemplateGallery />
           <button
             onClick={handleExportAllWidgets}
             disabled={widgets.length === 0}
@@ -282,7 +337,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex-1 min-h-0">
+              <div className={`flex-1 min-h-0 ${widget.type === 'card' ? 'flex flex-col items-stretch' : ''}`}>
                 {widget.type === "card" && <CardWidget widget={widget} />}
                 {widget.type === "table" && <TableWidget widget={widget} />}
                 {widget.type === "chart" && widget.config.type === "chart" && (

@@ -243,13 +243,28 @@ export class ApiService {
             financialData as Record<string, Record<string, unknown>>
           );
         }
+      } else {
+        // Check if data is wrapped in a single object (like Alpha Vantage's "Global Quote")
+        // If rawData has only one key and that value is an object, unwrap it
+        const keys = Object.keys(rawData);
+        if (keys.length === 1 && typeof rawData[keys[0]] === 'object' && rawData[keys[0]] !== null && !Array.isArray(rawData[keys[0]])) {
+          const wrappedData = rawData[keys[0]];
+          // Check if this is a time series object (keys are dates)
+          if (isFinancialTimeSeries(wrappedData)) {
+            dataToProcess = normalizeFinancialTimeSeries(
+              wrappedData as Record<string, Record<string, unknown>>
+            );
+          } else {
+            dataToProcess = wrappedData;
+          }
+        }
       }
 
       // Transform raw data into WidgetData format
       const widgetData: WidgetData = {
         records: Array.isArray(dataToProcess)
           ? dataToProcess.map((item) => flattenObject(item))
-          : [flattenObject(dataToProcess)],
+          : [dataToProcess], // Don't flatten single objects - keep the keys as-is
         totalCount: Array.isArray(dataToProcess) ? dataToProcess.length : 1,
         fetchedAt: Date.now(),
         metadata: {

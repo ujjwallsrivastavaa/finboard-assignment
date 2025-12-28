@@ -71,9 +71,31 @@ export interface DashboardActions {
 
   /** Import widget(s) from JSON (handles encrypted or plain JSON, single widget or array of widgets) */
   importWidget: (json: string) => Promise<void>;
+
+  /** Apply a dashboard template (replaces all current widgets with template widgets) */
+  applyTemplate: (template: DashboardTemplate) => void;
 }
 
 /**
  * Complete Dashboard Store type
  */
 export type DashboardStore = DashboardState & DashboardActions;
+
+/**
+ * Dashboard Template
+ * Represents a pre-configured dashboard with widgets and layout
+ */
+export interface DashboardTemplate {
+  /** Unique identifier for the template */
+  id: string;
+  /** Template name */
+  name: string;
+  /** Template description */
+  description: string;
+  /** Category or tags for filtering */
+  category?: string;
+  /** Preview image URL (optional) */
+  preview?: string;
+  /** Array of widget inputs that will be added to the dashboard */
+  widgets: WidgetInput[];
+}
