@@ -15,6 +15,13 @@ interface CardWidgetProps {
 export default function CardWidget({ widget }: CardWidgetProps) {
   const { setWidgetData, updateWidgetStatus } = useDashboardStore();
 
+  console.log(`[CardWidget] Rendering widget ${widget.id}:`, {
+    hasData: !!widget.data,
+    status: widget.status,
+    dataRecords: widget.data?.records?.length || 0,
+    firstRecord: widget.data?.records?.[0],
+  });
+
   const fetchData = useCallback(async () => {
     updateWidgetStatus(widget.id, "loading");
 

@@ -34,7 +34,7 @@ import type { WidgetInput } from "../types/widget";
 export const liveStockDataTemplate: DashboardTemplate = {
   id: "live-stock-data",
   name: "Live Stock Quote",
-  description: "Comprehensive stock quote card with 9 fields including Symbol, Open, High, Low, Price, Volume, Latest Trading Day, Previous Close, and Change. Edit to connect your API and customize fields.",
+  description: "Comprehensive stock quote card with 9 fields including Symbol, Open, High, Low, Price, Volume, Latest Trading Day, Previous Close, and Change. Uses sample data by default - Edit to connect your API.",
   category: "Finance",
   
   widgets: [
@@ -45,9 +45,9 @@ export const liveStockDataTemplate: DashboardTemplate = {
         x: 0,
         y: 0,
         w: 4,
-        h: 6,
+        h: 9,
         minW: 3,
-        minH: 4,
+        minH: 7,
       },
       config: {
         type: "card",

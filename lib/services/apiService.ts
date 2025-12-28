@@ -138,13 +138,31 @@ export class ApiService {
       const data = await response.json();
       const responseTime = performance.now() - startTime;
 
-      // Discover fields
-      const discovery = FieldDiscoveryService.discover(data);
+      // Apply the same data processing as fetchWidgetData to ensure field paths match
+      let dataForDiscovery = data;
+      
+      // Check if data is wrapped in a single object (like Alpha Vantage's "Global Quote")
+      // If data has only one key and that value is an object, unwrap it
+      const keys = Object.keys(data);
+      if (keys.length === 1 && typeof data[keys[0]] === 'object' && data[keys[0]] !== null && !Array.isArray(data[keys[0]])) {
+        const wrappedData = data[keys[0]];
+        // Check if this is a time series object (keys are dates)
+        if (isFinancialTimeSeries(wrappedData)) {
+          dataForDiscovery = normalizeFinancialTimeSeries(
+            wrappedData as Record<string, Record<string, unknown>>
+          );
+        } else {
+          dataForDiscovery = wrappedData;
+        }
+      }
+
+      // Discover fields from the processed data (same as what widget will receive)
+      const discovery = FieldDiscoveryService.discover(dataForDiscovery);
 
       const result: ApiTestSuccess = {
         success: true,
         message: `API connection successful! ${discovery.totalFields} fields found.`,
-        data,
+        data: dataForDiscovery, // Return the unwrapped data so field paths match
         fields: discovery.paths,
         statusCode: response.status,
         responseTime: Math.round(responseTime),
@@ -264,7 +282,7 @@ export class ApiService {
       const widgetData: WidgetData = {
         records: Array.isArray(dataToProcess)
           ? dataToProcess.map((item) => flattenObject(item))
-          : [dataToProcess], // Don't flatten single objects - keep the keys as-is
+          : [dataToProcess], // Don't flatten single objects - keep keys as-is
         totalCount: Array.isArray(dataToProcess) ? dataToProcess.length : 1,
         fetchedAt: Date.now(),
         metadata: {
