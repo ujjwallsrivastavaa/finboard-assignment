@@ -98,6 +98,7 @@ function hasFinancialFields(obj: Record<string, unknown>): boolean {
 
 /**
  * Detects if a value is a financial time-series object
+ * Handles both full time series (multiple dates) and single entries (one date)
  */
 export function isFinancialTimeSeries(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -105,7 +106,7 @@ export function isFinancialTimeSeries(value: unknown): boolean {
   }
 
   const entries = Object.entries(value);
-  if (entries.length < 2) return false;
+  if (entries.length < 1) return false; // Changed from < 2 to < 1 to handle single entries
 
   // Check if all keys are date/timestamp patterns
   const allKeysAreDates = entries.every(([key]) => isDateKey(key));

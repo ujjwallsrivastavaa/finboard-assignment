@@ -45,20 +45,21 @@ export default function DashboardPage() {
     removeWidget,
     updateAllWidgetLayouts,
     setWidgetData,
+    appendWidgetData,
     updateWidgetStatus,
     exportWidget,
     exportAllWidgets,
     importWidget,
   } = useDashboardStore();
 
-  // Track which widgets are already polling to avoid duplicates
-  const pollingWidgetsRef = useRef<Set<string>>(new Set());
+  // Track which widgets are already connected to avoid duplicates
+  const connectedWidgetsRef = useRef<Set<string>>(new Set());
   const widgetIdsRef = useRef<string[]>([]);
 
-  // Start polling for all widgets on mount and when new widgets are added
+  // Start data updates for all widgets on mount and when new widgets are added
   useEffect(() => {
     const currentWidgetIds = widgets.map((w) => w.id);
-    const pollingSet = pollingWidgetsRef.current;
+    const connectedSet = connectedWidgetsRef.current;
     const previousWidgetIds = widgetIdsRef.current;
 
     const newWidgets = widgets.filter(
@@ -68,21 +69,29 @@ export default function DashboardPage() {
     // Update the ref
     widgetIdsRef.current = currentWidgetIds;
 
-    // Only set up polling for new widgets
+    // Only set up data updates for new widgets
     newWidgets.forEach((widget) => {
-      // Skip if already polling
-      if (pollingSet.has(widget.id)) {
+      // Skip if already connected
+      if (connectedSet.has(widget.id)) {
         return;
       }
 
-      if (widget.config.refreshInterval && widget.config.refreshInterval > 0) {
-        pollingSet.add(widget.id);
+      // Start data updates if socket URL is provided OR refresh interval is set
+      if (
+        widget.config.socketUrl ||
+        (widget.config.refreshInterval && widget.config.refreshInterval > 0)
+      ) {
+        connectedSet.add(widget.id);
 
-        ApiService.startPolling(
+        ApiService.startDataUpdates(
           widget.id,
           widget.config,
-          (data) => {
-            setWidgetData(widget.id, data);
+          (data, isIncremental = false) => {
+            if (isIncremental) {
+              appendWidgetData(widget.id, data);
+            } else {
+              setWidgetData(widget.id, data);
+            }
             updateWidgetStatus(widget.id, "success");
           },
           (error) => {
@@ -98,14 +107,14 @@ export default function DashboardPage() {
       }
     });
 
-    // Cleanup: stop polling for removed widgets
+    // Cleanup: stop data updates for removed widgets
     return () => {
-      const removedWidgetIds = Array.from(pollingSet).filter(
+      const removedWidgetIds = Array.from(connectedSet).filter(
         (id) => !currentWidgetIds.includes(id)
       );
       removedWidgetIds.forEach((id) => {
-        ApiService.stopPolling(id);
-        pollingSet.delete(id);
+        ApiService.stopDataUpdates(id);
+        connectedSet.delete(id);
       });
     };
   }, [widgets, setWidgetData, updateWidgetStatus]);

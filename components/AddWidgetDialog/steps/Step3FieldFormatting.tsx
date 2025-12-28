@@ -135,6 +135,7 @@ export default function Step3FieldFormatting({
         config: {
           type: "chart",
           apiEndpoint: widgetConfig.apiEndpoint,
+          socketUrl: widgetConfig.socketUrl,
           chartConfig: chartConfigWithFullPath,
           refreshInterval: widgetConfig.refreshInterval,
           authentication: widgetConfig.authentication,
@@ -156,6 +157,7 @@ export default function Step3FieldFormatting({
         config: {
           type: widgetConfig.displayMode,
           apiEndpoint: widgetConfig.apiEndpoint,
+          socketUrl: widgetConfig.socketUrl,
           fields: selectedFields,
           refreshInterval: widgetConfig.refreshInterval,
           authentication: widgetConfig.authentication,

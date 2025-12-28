@@ -23,6 +23,7 @@ interface Step1ConfigProps {
   form: UseFormReturn<{
     widgetTitle: string;
     apiEndpoint: string;
+    socketUrl?: string;
     refreshInterval: number;
     requiresAuth: boolean;
     authType: "none" | "bearer" | "api-key" | "basic";
@@ -73,7 +74,9 @@ export const Step1Config = ({
               name="widgetTitle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-foreground">Widget Title</FormLabel>
+                  <FormLabel className="text-foreground">
+                    Widget Title
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., Bitcoin Price Tracker"
@@ -91,7 +94,9 @@ export const Step1Config = ({
               name="apiEndpoint"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-foreground">API Endpoint</FormLabel>
+                  <FormLabel className="text-foreground">
+                    API Endpoint
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., https://api.coinbase.com/v2/exchange-rates?currency=BTC"
@@ -99,6 +104,30 @@ export const Step1Config = ({
                       className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="socketUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-foreground">
+                    WebSocket URL (Optional)
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., wss://api.example.com/realtime"
+                      {...field}
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    If provided, real-time updates will use WebSocket instead of
+                    polling
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -124,6 +153,9 @@ export const Step1Config = ({
                       className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
                     />
                   </FormControl>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Used for polling when WebSocket is not available
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

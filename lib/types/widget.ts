@@ -57,7 +57,9 @@ export type {
 interface BaseWidgetConfig {
   /** API endpoint URL for data fetching */
   apiEndpoint: string;
-  /** Refresh interval in milliseconds */
+  /** WebSocket URL for real-time updates (optional) */
+  socketUrl?: string;
+  /** Refresh interval in milliseconds (used for polling when socket is not available) */
   refreshInterval?: number;
   /** Authentication configuration */
   authentication?: ApiAuthentication;
@@ -110,6 +112,8 @@ export interface WidgetConfigForFormatting {
   title: string;
   /** API endpoint URL */
   apiEndpoint: string;
+  /** WebSocket URL for real-time updates (optional) */
+  socketUrl?: string;
   /** Optional refresh interval in milliseconds */
   refreshInterval?: number;
   /** Authentication configuration */

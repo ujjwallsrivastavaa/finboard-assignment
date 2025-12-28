@@ -16,6 +16,7 @@ interface CardTableFieldSelectorProps {
   form: UseFormReturn<{
     widgetTitle: string;
     apiEndpoint: string;
+    socketUrl?: string;
     refreshInterval: number;
     requiresAuth: boolean;
     authType: "none" | "bearer" | "api-key" | "basic";
@@ -130,6 +131,7 @@ export const CardTableFieldSelector = ({
       type: displayMode,
       title: values.widgetTitle,
       apiEndpoint: values.apiEndpoint,
+      socketUrl: values.socketUrl || undefined,
       refreshInterval: values.refreshInterval,
       authentication,
       isFinancialData,

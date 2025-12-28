@@ -44,6 +44,9 @@ export interface DashboardActions {
   /** Set widget data after fetch */
   setWidgetData: (id: string, data: WidgetData) => void;
 
+  /** Append new data to existing widget data (for streaming/incremental updates) */
+  appendWidgetData: (id: string, data: WidgetData) => void;
+
   /** Update widget status and error */
   updateWidgetStatus: (
     id: string,

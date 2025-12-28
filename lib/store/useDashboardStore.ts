@@ -180,6 +180,59 @@ export const useDashboardStore = create<DashboardStore>()(
         }));
       },
 
+      appendWidgetData: (id: string, newData: WidgetData): void => {
+        console.log(`[Store] appendWidgetData called for widget ${id}`);
+        console.log(`[Store] New data to append:`, newData);
+
+        if (!validateWidgetData(newData)) {
+          console.error("Invalid widget data structure", newData);
+          return;
+        }
+
+        set((state) => {
+          const widget = state.widgets.find((w) => w.id === id);
+          console.log(`[Store] Current widget data:`, widget?.data);
+
+          return {
+            widgets: state.widgets.map((widget) => {
+              if (widget.id !== id) return widget;
+
+              // If no existing data, just set the new data
+              if (!widget.data || !widget.data.records.length) {
+                console.log(`[Store] No existing data, setting new data directly`);
+                return {
+                  ...widget,
+                  data: newData,
+                  status: "success" as WidgetStatus,
+                  lastUpdated: Date.now(),
+                };
+              }
+
+              // Append new records to existing data
+              const mergedData: WidgetData = {
+                records: [...widget.data.records, ...newData.records],
+                totalCount: widget.data.totalCount + newData.totalCount,
+                fetchedAt: Date.now(),
+                metadata: {
+                  ...widget.data.metadata,
+                  ...newData.metadata,
+                },
+              };
+
+              console.log(`[Store] Merged data:`, mergedData);
+              console.log(`[Store] Old record count: ${widget.data.records.length}, New record count: ${newData.records.length}, Total: ${mergedData.records.length}`);
+
+              return {
+                ...widget,
+                data: mergedData,
+                status: "success" as WidgetStatus,
+                lastUpdated: Date.now(),
+              };
+            }),
+          };
+        });
+      },
+
       updateWidgetStatus: (
         id: string,
         status: WidgetStatus,

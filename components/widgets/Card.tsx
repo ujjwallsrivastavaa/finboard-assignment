@@ -29,14 +29,16 @@ export default function CardWidget({ widget }: CardWidgetProps) {
   }, [widget.id, widget.config, setWidgetData, updateWidgetStatus]);
 
   useEffect(() => {
-    // Only fetch if we don't have data yet AND not using polling
-    // If refreshInterval is set, the dashboard will handle polling
+    // Only fetch if we don't have data yet AND not using polling or sockets
+    // If refreshInterval or socketUrl is set, the dashboard will handle updates
     const isPolling =
       widget.config.refreshInterval && widget.config.refreshInterval > 0;
-    if (!widget.data && widget.status === "idle" && !isPolling) {
+    const hasSocket = !!widget.config.socketUrl;
+
+    if (!widget.data && widget.status === "idle" && !isPolling && !hasSocket) {
       fetchData();
     }
-  }, [widget.data, widget.status, widget.config.refreshInterval, fetchData]);
+  }, [widget.data, widget.status, widget.config.refreshInterval, widget.config.socketUrl, fetchData]);
 
   const handleRefresh = () => {
     fetchData();

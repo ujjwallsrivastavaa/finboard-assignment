@@ -35,6 +35,7 @@ interface ChartFieldSelectorProps {
   form: UseFormReturn<{
     widgetTitle: string;
     apiEndpoint: string;
+    socketUrl?: string;
     refreshInterval: number;
     requiresAuth: boolean;
     authType: "none" | "bearer" | "api-key" | "basic";
@@ -185,6 +186,7 @@ export default function ChartFieldSelector({
       type: "chart",
       title: values.widgetTitle,
       apiEndpoint: values.apiEndpoint,
+      socketUrl: values.socketUrl || undefined,
       refreshInterval: values.refreshInterval,
       authentication,
       isFinancialData,
@@ -219,7 +221,9 @@ export default function ChartFieldSelector({
     <div className="flex flex-col gap-6">
       {/* Chart Type Selector */}
       <div className="space-y-3">
-        <Label className="text-foreground font-medium text-sm">Chart Type</Label>
+        <Label className="text-foreground font-medium text-sm">
+          Chart Type
+        </Label>
         <Select
           value={selectedChartType}
           onValueChange={(value) => {
@@ -277,10 +281,7 @@ export default function ChartFieldSelector({
                 const currentSelection = fieldSelections[fieldKey];
 
                 return (
-                  <Card
-                    key={fieldKey}
-                    className="p-4 bg-card/50 border-border"
-                  >
+                  <Card key={fieldKey} className="p-4 bg-card/50 border-border">
                     <div className="space-y-3">
                       <div>
                         <Label className="text-foreground font-medium">

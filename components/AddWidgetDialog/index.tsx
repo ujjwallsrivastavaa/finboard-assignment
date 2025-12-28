@@ -23,6 +23,11 @@ const formSchema = z
   .object({
     widgetTitle: z.string().min(1, "Widget title is required"),
     apiEndpoint: z.string().url("Must be a valid URL"),
+    socketUrl: z
+      .string()
+      .url("Must be a valid WebSocket URL")
+      .optional()
+      .or(z.literal("")),
     refreshInterval: z.number().min(1000, "Minimum 1000ms"),
     requiresAuth: z.boolean(),
     authType: z.enum(["none", "bearer", "api-key", "basic"]),
@@ -207,12 +212,14 @@ const AddWidgetDialog = ({
       ? {
           widgetTitle: editWidget.title,
           apiEndpoint: editWidget.config.apiEndpoint,
+          socketUrl: editWidget.config.socketUrl || "",
           refreshInterval: editWidget.config.refreshInterval || 30000,
           ...getAuthDefaults(),
         }
       : {
           widgetTitle: "",
           apiEndpoint: "",
+          socketUrl: "",
           refreshInterval: 30000,
           requiresAuth: false,
           authType: "none",
@@ -310,6 +317,7 @@ const AddWidgetDialog = ({
       form.reset({
         widgetTitle: editWidget.title,
         apiEndpoint: editWidget.config.apiEndpoint,
+        socketUrl: editWidget.config.socketUrl || "",
         refreshInterval: editWidget.config.refreshInterval || 30000,
         ...getAuthDefaults(),
       });
@@ -319,6 +327,7 @@ const AddWidgetDialog = ({
       form.reset({
         widgetTitle: "",
         apiEndpoint: "",
+        socketUrl: "",
         refreshInterval: 30000,
         requiresAuth: false,
         authType: "none",

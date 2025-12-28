@@ -27,6 +27,7 @@ interface Step2FieldSelectorProps {
   form: UseFormReturn<{
     widgetTitle: string;
     apiEndpoint: string;
+    socketUrl?: string;
     refreshInterval: number;
     requiresAuth: boolean;
     authType: "none" | "bearer" | "api-key" | "basic";
