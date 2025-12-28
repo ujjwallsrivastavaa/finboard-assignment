@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import {
   Table as TableUI,
   TableBody,
@@ -12,7 +12,14 @@ import {
 import { ApiService } from "@/lib/services";
 import { useDashboardStore } from "@/lib/store/useDashboardStore";
 import type { Widget } from "@/lib/types/widget";
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatValue } from "@/lib/utils/formatters";
 
@@ -20,8 +27,19 @@ interface TableWidgetProps {
   widget: Widget;
 }
 
+type SortDirection = "asc" | "desc" | null;
+
+interface SortState {
+  field: string | null;
+  direction: SortDirection;
+}
+
 export default function TableWidget({ widget }: TableWidgetProps) {
   const { setWidgetData, updateWidgetStatus } = useDashboardStore();
+  const [sortState, setSortState] = useState<SortState>({
+    field: null,
+    direction: null,
+  });
 
   const fetchData = useCallback(async () => {
     updateWidgetStatus(widget.id, "loading");
@@ -46,10 +64,86 @@ export default function TableWidget({ widget }: TableWidgetProps) {
     if (!widget.data && widget.status === "idle" && !isPolling && !hasSocket) {
       fetchData();
     }
-  }, [widget.data, widget.status, widget.config.refreshInterval, widget.config.socketUrl, fetchData]);
+  }, [
+    widget.data,
+    widget.status,
+    widget.config.refreshInterval,
+    widget.config.socketUrl,
+    fetchData,
+  ]);
 
   const handleRefresh = () => {
     fetchData();
+  };
+
+  // Check if a field is sortable based on its type
+  const isFieldSortable = (fieldPath: string): boolean => {
+    const field = fields.find((f) => f.path === fieldPath);
+    if (!field) return false;
+
+    // Sortable types: number, date
+    return field.type === "number" || field.type === "date";
+  };
+
+  // Handle sort click
+  const handleSort = (fieldPath: string) => {
+    if (!isFieldSortable(fieldPath)) return;
+
+    setSortState((prev) => {
+      if (prev.field !== fieldPath) {
+        return { field: fieldPath, direction: "asc" };
+      }
+      if (prev.direction === "asc") {
+        return { field: fieldPath, direction: "desc" };
+      }
+      if (prev.direction === "desc") {
+        return { field: null, direction: null };
+      }
+      return { field: fieldPath, direction: "asc" };
+    });
+  };
+
+  // Sort the records
+  const getSortedRecords = () => {
+    if (!widget.data || !sortState.field || !sortState.direction) {
+      return widget.data?.records || [];
+    }
+
+    const field = fields.find((f) => f.path === sortState.field);
+    if (!field) return widget.data.records;
+
+    const sorted = [...widget.data.records].sort((a, b) => {
+      const aVal = a[sortState.field!];
+      const bVal = b[sortState.field!];
+
+      // Handle null/undefined
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+
+      // Sort based on field type
+      if (field.type === "number") {
+        const aNum = Number(aVal);
+        const bNum = Number(bVal);
+        return sortState.direction === "asc" ? aNum - bNum : bNum - aNum;
+      }
+
+      if (field.type === "date") {
+        const aDate = new Date(aVal as string);
+        const bDate = new Date(bVal as string);
+        return sortState.direction === "asc"
+          ? aDate.getTime() - bDate.getTime()
+          : bDate.getTime() - aDate.getTime();
+      }
+
+      // Fallback to string comparison
+      const aStr = String(aVal);
+      const bStr = String(bVal);
+      return sortState.direction === "asc"
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
+    });
+
+    return sorted;
   };
 
   if (widget.status === "loading") {
@@ -92,20 +186,47 @@ export default function TableWidget({ widget }: TableWidgetProps) {
       ? widget.config.fields
       : [];
 
+  const sortedRecords = getSortedRecords();
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="bg-card/50 border-b border-border">
         <TableUI>
           <TableHeader>
             <TableRow className="hover:bg-accent/50">
-              {fields.map((field) => (
-                <TableHead
-                  key={field.path}
-                  className="text-emerald-400 font-semibold text-xs uppercase tracking-wide bg-card/50 py-3"
-                >
-                  {field.name}
-                </TableHead>
-              ))}
+              {fields.map((field) => {
+                const sortable = isFieldSortable(field.path);
+                const isActive = sortState.field === field.path;
+
+                return (
+                  <TableHead
+                    key={field.path}
+                    className={`text-emerald-400 font-semibold text-xs uppercase tracking-wide bg-card/50 py-3 ${
+                      sortable
+                        ? "cursor-pointer select-none hover:bg-accent/30 transition-colors"
+                        : ""
+                    }`}
+                    onClick={() => sortable && handleSort(field.path)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{field.name}</span>
+                      {sortable && (
+                        <span className="flex flex-col items-center justify-center">
+                          {!isActive && (
+                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/50" />
+                          )}
+                          {isActive && sortState.direction === "asc" && (
+                            <ArrowUp className="w-3 h-3 text-emerald-400" />
+                          )}
+                          {isActive && sortState.direction === "desc" && (
+                            <ArrowDown className="w-3 h-3 text-emerald-400" />
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                );
+              })}
             </TableRow>
           </TableHeader>
         </TableUI>
@@ -113,7 +234,7 @@ export default function TableWidget({ widget }: TableWidgetProps) {
       <div className="flex-1 overflow-auto">
         <TableUI>
           <TableBody>
-            {widget.data.records.map((record, index) => (
+            {sortedRecords.map((record, index) => (
               <TableRow
                 key={index}
                 className="hover:bg-accent/30 border-b border-border/30"
